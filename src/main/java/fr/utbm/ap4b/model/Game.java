@@ -8,35 +8,55 @@ public class Game {
     private final int numPlayers;
     private final boolean isTeamMode;
     private final boolean isPiquant;
+    private final List<String> playerNames;
+    private final int numAI;
     private int playerTurn;
-    private List<Actor> players; // Liste pour gérer tous les joueurs (Joueur, IA, JoueurEquipe)
+    private List<Actor> players;
     private CompletedTrios completedTrios;
+    private boolean isGameStarted;
+    private Actor winner = null;
+    
+    private List<CardLocation> revealedCards;
 
-    public Game(List<String> playerNames, boolean isTeamMode, boolean isPiquant) {
-        if (playerNames == null || playerNames.isEmpty()) {
-            throw new IllegalArgumentException("La liste des noms de joueurs ne peut pas être vide.");
+    public Game(List<String> playerNames, int numAI, boolean isTeamMode, boolean isPiquant) {
+        if (playerNames == null) {
+            throw new IllegalArgumentException("La liste des noms de joueurs ne peut pas être nulle.");
         }
-        this.numPlayers = playerNames.size();
+        
+        this.playerNames = playerNames;
+        this.numAI = numAI;
+        this.numPlayers = playerNames.size() + numAI;
+
+        if (numPlayers > 6) {
+            throw new IllegalArgumentException("Le nombre total de joueurs (humains + IA) ne peut pas dépasser 6.");
+        }
+        if (numPlayers < 3 && !isTeamMode) {
+             throw new IllegalArgumentException("Le mode normal requiert au moins 3 joueurs au total.");
+        }
+        if (isTeamMode && numAI > 0) {
+            throw new IllegalArgumentException("Le mode équipe avec des IA n'est pas supporté.");
+        }
+
         this.isTeamMode = isTeamMode;
         this.isPiquant = isPiquant;
         this.drawPile = new DrawPile();
         this.playerTurn = 0;
         this.completedTrios = new CompletedTrios(numPlayers);
+        this.revealedCards = new ArrayList<>();
+        this.isGameStarted = false;
         
-        initializePlayers(playerNames);
+        initializePlayers();
     }
 
-    private void initializePlayers(List<String> playerNames) {
+    private void initializePlayers() {
         this.players = new ArrayList<>();
         if (isTeamMode) {
-            // Créer des joueurs en équipe
-            for (int i = 0; i < numPlayers; i++) {
-                players.add(new JoueurEquipe(playerNames.get(i), i));
+            int playerIndex = 0;
+            for (String name : playerNames) {
+                players.add(new JoueurEquipe(name, playerIndex++));
             }
-            // Lier les coéquipiers
-            // Pour 4 joueurs, les équipes sont (0,2) and (1,3)
-            // Pour 6 joueurs, les équipes sont (0,3), (1,4), (2,5)
-            int teamMateOffset = numPlayers / 2;
+            
+            int teamMateOffset = players.size() / 2;
             for (int i = 0; i < teamMateOffset; i++) {
                 JoueurEquipe p1 = (JoueurEquipe) players.get(i);
                 JoueurEquipe p2 = (JoueurEquipe) players.get(i + teamMateOffset);
@@ -44,30 +64,73 @@ public class Game {
                 p2.setTeammate(p1);
             }
         } else {
-            // Créer des joueurs normaux (on pourrait mixer avec des IA ici)
-            for (int i = 0; i < numPlayers; i++) {
-                players.add(new Joueur(playerNames.get(i), i));
+            int playerIndex = 0;
+            for (String name : playerNames) {
+                players.add(new Joueur(name, playerIndex++));
+            }
+            for (int i = 0; i < numAI; i++) {
+                players.add(new IA("IA " + (i + 1), playerIndex++));
             }
         }
     }
 
     public void startGame() {
-        // 1. Distribuer les mains
+        if (isGameStarted) return;
         List<List<Card>> hands = drawPile.dealHands(numPlayers, isTeamMode);
-
-        // 2. Assigner les mains aux joueurs
         for (int i = 0; i < numPlayers; i++) {
             players.get(i).setupHand(hands.get(i));
         }
-
-        // Le reste des cartes dans drawPile constitue maintenant le "centre"
-        System.out.println("La partie commence ! " + drawPile.getRemainingCardCount() + " cartes au centre.");
+        System.out.println("La partie commence ! " + drawPile.getRemainingCardCount() + " cartes dans la pioche.");
+        isGameStarted = true;
     }
 
+    public void revealLargestCardFromPlayer(int playerIndex) {
+        Actor player = players.get(playerIndex);
+        Card card = player.getHand().getLargestCard();
+        revealCardFromPlayer(card, player);
+    }
 
+    public void revealSmallestCardFromPlayer(int playerIndex) {
+        Actor player = players.get(playerIndex);
+        Card card = player.getHand().getSmallestCard();
+        revealCardFromPlayer(card, player);
+    }
+
+    private void revealCardFromPlayer(Card card, Actor player) {
+        this.revealedCards.add(CardLocation.fromPlayer(card, player));
+    }
+
+    public void revealCardFromDrawPile(Card card) {
+        this.revealedCards.add(CardLocation.fromDrawPile(card, this.drawPile));
+    }
+
+    public void processTrio(List<Card> trio) {
+        if (trio == null || trio.size() != 3) return;
+
+        for (Card card : trio) {
+            revealedCards.stream()
+                .filter(loc -> loc.getCard().equals(card))
+                .findFirst()
+                .ifPresent(CardLocation::removeFromSource);
+        }
+        
+        clearRevealedCards();
+    }
+    
+    private void clearRevealedCards() {
+        this.revealedCards.clear();
+    }
+
+    public List<CardLocation> getRevealedCards() {
+        return revealedCards;
+    }
 
     public boolean isPiquant() {
         return isPiquant;
+    }
+
+    public boolean isTeamMode() {
+        return isTeamMode;
     }
 
     public int getPlayerTurn() {
@@ -92,5 +155,18 @@ public class Game {
 
     public CompletedTrios getCompletedTrios() {
         return completedTrios;
+    }
+
+    public boolean isGameStarted() {
+        return isGameStarted;
+    }
+
+    public Actor getWinner() {
+        return this.winner;
+    }
+
+    public boolean isGameEnded() {
+        this.winner = completedTrios.getWinner(this);
+        return this.winner != null;
     }
 }

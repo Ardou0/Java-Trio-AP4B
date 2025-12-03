@@ -1,81 +1,91 @@
 package fr.utbm.ap4b.model;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Représente l'ensemble des trios complétés par chaque joueur au cours de la partie.
  */
 public class CompletedTrios {
 
-    // Une liste où chaque index correspond à un joueur.
-    // Chaque joueur a une liste de ses trios. Un trio est une liste de 3 cartes.
     private final List<List<List<Card>>> triosByPlayer;
-    private final int numPlayers;
 
-    /**
-     * Construit un gestionnaire de trios pour un nombre de joueurs donné.
-     *
-     * @param numPlayers Le nombre de joueurs dans la partie.
-     */
     public CompletedTrios(int numPlayers) {
         if (numPlayers <= 0) {
             throw new IllegalArgumentException("Le nombre de joueurs doit être positif.");
         }
-        this.numPlayers = numPlayers;
         this.triosByPlayer = new ArrayList<>(numPlayers);
         for (int i = 0; i < numPlayers; i++) {
-            // Initialise une liste de trios vide pour chaque joueur.
             this.triosByPlayer.add(new ArrayList<>());
         }
     }
 
-    /**
-     * Ajoute un trio complété à la liste d'un joueur spécifique.
-     *
-     * @param playerIndex L'index du joueur (commençant à 0).
-     * @param trio        La liste de cartes constituant le trio. Doit contenir 3 cartes.
-     * @throws IllegalArgumentException si la liste de cartes n'est pas un trio valide.
-     * @throws IndexOutOfBoundsException si l'index du joueur est invalide.
-     */
     public void addTrio(int playerIndex, List<Card> trio) {
         if (trio == null || trio.size() != 3) {
             throw new IllegalArgumentException("Un trio doit être composé de 3 cartes.");
         }
-        // On s'assure que c'est bien un trio (les 3 cartes ont la même valeur)
         if (!(trio.get(0).getValue() == trio.get(1).getValue() && trio.get(1).getValue() == trio.get(2).getValue())) {
             throw new IllegalArgumentException("Les 3 cartes doivent avoir la même valeur pour former un trio.");
         }
-
-        this.triosByPlayer.get(playerIndex).add(new ArrayList<>(trio)); // Ajoute une copie
+        this.triosByPlayer.get(playerIndex).add(new ArrayList<>(trio));
     }
 
-    /**
-     * Récupère la liste de tous les trios complétés par un joueur.
-     *
-     * @param playerIndex L'index du joueur.
-     * @return Une liste non modifiable des trios du joueur.
-     * @throws IndexOutOfBoundsException si l'index du joueur est invalide.
-     */
     public List<List<Card>> getTriosForPlayer(int playerIndex) {
         return Collections.unmodifiableList(this.triosByPlayer.get(playerIndex));
     }
 
     /**
-     * Compte le nombre de trios complétés par un joueur.
+     * Vérifie s'il y a un gagnant en fonction des trios complétés et du mode de jeu.
      *
-     * @param playerIndex L'index du joueur.
-     * @return Le nombre de trios.
+     * @param game L'instance actuelle du jeu pour obtenir le contexte (mode, joueurs).
+     * @return L'acteur gagnant, ou null s'il n'y a pas encore de gagnant.
      */
-    public int getNumberOfTriosForPlayer(int playerIndex) {
-        return this.triosByPlayer.get(playerIndex).size();
+    public Actor getWinner(Game game) {
+        return getIndividualWinner(game);
     }
 
-    /**
-     * @return Le nombre total de joueurs gérés.
-     */
-    public int getNumPlayers() {
-        return numPlayers;
+    private Actor getIndividualWinner(Game game) {
+        for (Actor player : game.getPlayers()) {
+            List<List<Card>> playerTrios = getTriosForPlayer(player.getPlayerIndex());
+            if (playerTrios.isEmpty()) continue;
+
+            if (hasTrioOfSevens(playerTrios)) {
+                return player;
+            }
+
+            if (game.isPiquant()) {
+                if (hasNeighboringTrios(playerTrios)) {
+                    return player;
+                }
+            } else {
+                if (playerTrios.size() >= 3) {
+                    return player;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean hasTrioOfSevens(List<List<Card>> trios) {
+        return trios.stream().anyMatch(trio -> !trio.isEmpty() && trio.get(0).getValue() == 7);
+    }
+
+    private boolean hasNeighboringTrios(List<List<Card>> trios) {
+        if (trios.size() < 2) return false;
+
+        for (int i = 0; i < trios.size(); i++) {
+            for (int j = i + 1; j < trios.size(); j++) {
+                Card cardFromTrio1 = trios.get(i).get(0);
+                Card cardFromTrio2 = trios.get(j).get(0);
+
+                if (cardFromTrio1.isNeighbor(cardFromTrio2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
