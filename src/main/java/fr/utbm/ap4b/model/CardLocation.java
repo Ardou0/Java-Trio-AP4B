@@ -81,4 +81,8 @@ public class CardLocation {
     public int hashCode() {
         return Objects.hash(card);
     }
+
+    public Actor getSourcePlayer() {
+        return owner;
+    }
 }
