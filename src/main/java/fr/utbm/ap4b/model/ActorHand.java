@@ -68,7 +68,12 @@ public class ActorHand {
             throw new NoSuchElementException("La main est vide.");
         }
         // Comme la main est triée, la plus petite carte est la première.
-        return cards.get(0);
+        for(int i = 0; i < cards.size(); i++) {
+            if(cards.get(i).isIterable()) {
+                return cards.get(i);
+            }
+        }
+        return null;
     }
 
     /**
@@ -82,8 +87,12 @@ public class ActorHand {
         if (cards.isEmpty()) {
             throw new NoSuchElementException("La main est vide.");
         }
-        // Comme la main est triée, la plus grande carte est la dernière.
-        return cards.get(cards.size() - 1);
+        for(int i = cards.size() - 1; i >= 0; i--) {
+            if(cards.get(i).isIterable()) {
+                return cards.get(i);
+            }
+        }
+        return null;
     }
 
 

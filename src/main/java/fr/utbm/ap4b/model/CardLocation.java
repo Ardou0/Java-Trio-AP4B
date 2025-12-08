@@ -16,6 +16,7 @@ public class CardLocation {
     // Constructeur privé pour forcer l'utilisation des méthodes factory
     private CardLocation(Card card, Actor owner, DrawPile drawPile) {
         this.card = card;
+        this.card.toggleIterable();
         this.owner = owner;
         this.drawPile = drawPile;
     }

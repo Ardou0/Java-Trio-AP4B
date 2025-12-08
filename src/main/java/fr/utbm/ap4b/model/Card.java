@@ -1,41 +1,42 @@
 package fr.utbm.ap4b.model;
 
-import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
 
 public class Card {
+    private final UUID id; // Unique identifier for each card object
     private final int value;
     private final String name;
-    private int[] neighbors; // Laissés pour une utilisation future, non initialisés par le constructeur principal
-    private String imagePath; // Laissé pour une utilisation future
+    private int[] neighbors;
+    private String imagePath;
+    private boolean iterable;
 
-    /**
-     * Construit une carte à partir d'une valeur de l'énumération Trios.
-     * @param trio L'énumération représentant la carte.
-     */
     public Card(Trios trio) {
+        this.id = UUID.randomUUID(); // Assign a unique ID on creation
         this.value = trio.getValue();
         this.name = trio.name();
-        // Les voisins et l'imagePath ne sont pas définis ici,
-        // ils peuvent être définis plus tard si nécessaire.
-        this.neighbors = new int[0];
+        this.neighbors = trio.getNeighbors();
         this.imagePath = "";
+        this.iterable = true;
     }
 
-    // On peut garder les anciens constructeurs si d'autres parties du code les utilisent
+    // Keep old constructors but add the ID initialization
     public Card(int value, String name, int[] neighbors) {
+        this.id = UUID.randomUUID();
         this.value = value;
         this.name = name;
         this.neighbors = neighbors;
+        this.iterable = true;
     }
 
     public Card(int value, String name, int[] neighbors, String imagePath) {
+        this.id = UUID.randomUUID();
         this.value = value;
         this.name = name;
         this.neighbors = neighbors;
         this.imagePath = imagePath;
+        this.iterable = true;
     }
-
 
     public int getValue() {
         return value;
@@ -61,25 +62,37 @@ public class Card {
         this.imagePath = imagePath;
     }
 
+    public boolean isIterable() {
+        return iterable;
+    }
+
+    public void toggleIterable() {
+        this.iterable = !this.iterable;
+    }
+
     @Override
     public String toString() {
         return "Card{" +
-                "value=" + value +
+                "id=" + id +
+                ", value=" + value +
                 ", name='" + name + '\'' +
                 '}';
     }
 
+    // --- CRITICAL FIX ---
+    // The equals and hashCode methods now use the unique ID, not the value.
+    // This ensures that two different card objects with the same face value are NOT considered equal.
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Card card = (Card) o;
-        return value == card.value;
+        return id.equals(card.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(value);
+        return Objects.hash(id);
     }
 
     public boolean isNeighbor(Card otherCard) {

@@ -15,6 +15,7 @@ public class Joueur implements Actor {
     public Joueur(String name, int playerIndex) {
         this.name = name;
         this.playerIndex = playerIndex;
+        System.out.println("Joueur créé : " + playerIndex + "");
         this.hand = new ActorHand(); // Initialise avec une main vide
     }
 
@@ -47,12 +48,6 @@ public class Joueur implements Actor {
      */
     @Override
     public void playTurn(Game game) {
-        // TODO: Implémenter la logique d'interaction avec l'interface utilisateur.
-        // 1. Attendre l'action du joueur (ex: choisir de révéler une carte de sa main,
-        //    d'un autre joueur, ou du centre).
-        // 2. Valider l'action.
-        // 3. Mettre à jour l'état du jeu (Game) en conséquence.
-        // 4. Vérifier si un trio a été formé.
         System.out.println("C'est au tour de " + name + " de jouer.");
     }
 }

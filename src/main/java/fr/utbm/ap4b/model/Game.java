@@ -1,9 +1,18 @@
 package fr.utbm.ap4b.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Game {
+
+    public enum GamePhase {
+        INITIAL_SWAP,
+        PLAYING,
+        POST_TRIO_SWAP
+    }
+
     private DrawPile drawPile;
     private final int numPlayers;
     private final boolean isTeamMode;
@@ -17,7 +26,13 @@ public class Game {
     private Actor winner = null;
 
     private List<CardLocation> revealedCards;
-    private List<Card> cardsInPlayThisTurn; // Prevents re-revealing the same card
+    private List<Card> cardsInPlayThisTurn;
+
+    // Fields for card exchange mechanism
+    private GamePhase currentPhase;
+    private Set<Actor> playersAllowedToSwap;
+    private Set<Actor> playersWhoHaveSwapped;
+
 
     public Game(List<String> playerNames, int numAI, boolean isTeamMode, boolean isPiquant) {
         if (playerNames == null) {
@@ -46,6 +61,11 @@ public class Game {
         this.revealedCards = new ArrayList<>();
         this.cardsInPlayThisTurn = new ArrayList<>();
         this.isGameStarted = false;
+
+        // Initialize swap-related fields
+        this.playersAllowedToSwap = new HashSet<>();
+        this.playersWhoHaveSwapped = new HashSet<>();
+        this.currentPhase = GamePhase.PLAYING; // Default phase
 
         initializePlayers();
     }
@@ -82,9 +102,70 @@ public class Game {
         for (int i = 0; i < numPlayers; i++) {
             players.get(i).setupHand(hands.get(i));
         }
-        System.out.println("La partie commence ! " + drawPile.getRemainingCardCount() + " cartes dans la pioche.");
         isGameStarted = true;
+
+        if (isTeamMode) {
+            System.out.println("Début de la phase d'échange initiale.");
+            this.currentPhase = GamePhase.INITIAL_SWAP;
+            this.playersAllowedToSwap.addAll(players);
+        } else {
+            System.out.println("La partie commence ! " + drawPile.getRemainingCardCount() + " cartes dans la pioche.");
+        }
     }
+
+    public boolean exchangeCards(int initiatingPlayerIndex, Card cardToGive, Card cardToReceive) {
+        if (currentPhase == GamePhase.PLAYING || !isTeamMode) {
+            return false; // Not a swap phase or not team mode
+        }
+
+        Actor initiator = players.get(initiatingPlayerIndex);
+        if (!(initiator instanceof JoueurEquipe) || playersWhoHaveSwapped.contains(initiator)) {
+            return false; // Not a team player or already swapped this phase
+        }
+
+        JoueurEquipe teamInitiator = (JoueurEquipe) initiator;
+        JoueurEquipe teammate = teamInitiator.getTeammate();
+
+        if (teammate == null || !playersAllowedToSwap.contains(initiator)) {
+            return false; // No teammate or this team is not allowed to swap now
+        }
+
+        // Verify cards exist in the correct hands
+        if (!teamInitiator.getHand().getCards().contains(cardToGive) || !teammate.getHand().getCards().contains(cardToReceive)) {
+            return false;
+        }
+
+        // Perform the swap
+        teamInitiator.getHand().removeCard(cardToGive);
+        teamInitiator.getHand().addCard(cardToReceive);
+        teammate.getHand().removeCard(cardToReceive);
+        teammate.getHand().addCard(cardToGive);
+
+        // Mark both players as having swapped for this phase
+        playersWhoHaveSwapped.add(teamInitiator);
+        playersWhoHaveSwapped.add(teammate);
+
+        System.out.println(teamInitiator.getName() + " et " + teammate.getName() + " ont échangé des cartes.");
+
+        // Check if the current swap phase is over
+        checkAndEndSwapPhase();
+
+        return true;
+    }
+
+    private void checkAndEndSwapPhase() {
+        if (playersWhoHaveSwapped.size() >= playersAllowedToSwap.size()) {
+            if (currentPhase == GamePhase.INITIAL_SWAP) {
+                System.out.println("Phase d'échange initiale terminée. La partie commence !");
+            } else { // POST_TRIO_SWAP
+                System.out.println("Phase d'échange terminée. Le jeu reprend.");
+            }
+            this.currentPhase = GamePhase.PLAYING;
+            this.playersAllowedToSwap.clear();
+            this.playersWhoHaveSwapped.clear();
+        }
+    }
+
 
     public boolean nextTurn() {
         if (this.isGameEnded() || !this.isGameStarted) {
@@ -102,13 +183,32 @@ public class Game {
         }
 
         if (isTrio) {
+            Actor scoringPlayer = getCurrentPlayer();
             List<Card> trio = new ArrayList<>();
             for (CardLocation loc : revealedCards) {
                 trio.add(loc.getCard());
             }
-            completedTrios.addTrio(getCurrentPlayer().getPlayerIndex(), trio);
+            completedTrios.addTrio(scoringPlayer.getPlayerIndex(), trio);
             processTrio(trio); // This clears revealedCards and cardsInPlayThisTurn
 
+            if (isTeamMode) {
+                System.out.println("Un trio a été formé ! Phase d'échange pour les équipes adverses.");
+                this.currentPhase = GamePhase.POST_TRIO_SWAP;
+                this.playersWhoHaveSwapped.clear();
+                this.playersAllowedToSwap.clear();
+
+                JoueurEquipe scoringTeamPlayer = (JoueurEquipe) scoringPlayer;
+                for (Actor player : players) {
+                    if (player != scoringTeamPlayer && player != scoringTeamPlayer.getTeammate()) {
+                        playersAllowedToSwap.add(player);
+                    }
+                }
+                // If there are no other teams to swap, end the phase immediately.
+                if (playersAllowedToSwap.isEmpty()) {
+                    checkAndEndSwapPhase();
+                }
+            }
+            nextPlayer();
             isGameEnded();
             return true; // Player plays again
         } else {
@@ -150,6 +250,7 @@ public class Game {
     }
 
     public boolean canRevealCard() {
+        if (currentPhase != GamePhase.PLAYING) return false; // Can't reveal during swap
         if (revealedCards.size() >= 3) {
             return false;
         }
@@ -177,6 +278,9 @@ public class Game {
     }
 
     private void clearRevealedCards() {
+        for(CardLocation card : revealedCards) {
+            card.getCard().toggleIterable();
+        }
         this.revealedCards.clear();
         this.cardsInPlayThisTurn.clear();
     }
@@ -228,5 +332,13 @@ public class Game {
     public boolean isGameEnded() {
         this.winner = completedTrios.getWinner(this);
         return this.winner != null;
+    }
+
+    public GamePhase getCurrentPhase() {
+        return currentPhase;
+    }
+
+    public Set<Actor> getPlayersAllowedToSwap() {
+        return playersAllowedToSwap;
     }
 }

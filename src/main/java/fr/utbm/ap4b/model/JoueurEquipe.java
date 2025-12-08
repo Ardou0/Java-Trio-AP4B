@@ -7,7 +7,7 @@ package fr.utbm.ap4b.model;
  */
 public class JoueurEquipe extends Joueur {
 
-    private Actor teammate;
+    private JoueurEquipe teammate;
 
     public JoueurEquipe(String name, int playerIndex) {
         super(name, playerIndex);
@@ -17,14 +17,14 @@ public class JoueurEquipe extends Joueur {
      * Définit le coéquipier de ce joueur.
      * @param teammate Le coéquipier (peut être un Joueur, une IA, ou un autre JoueurEquipe).
      */
-    public void setTeammate(Actor teammate) {
+    public void setTeammate(JoueurEquipe teammate) {
         this.teammate = teammate;
     }
 
     /**
      * @return Le coéquipier de ce joueur, ou null s'il n'en a pas.
      */
-    public Actor getTeammate() {
+    public JoueurEquipe getTeammate() {
         return teammate;
     }
 

@@ -26,6 +26,7 @@ public class DrawPile {
                 this.cards.add(new Card(trioValue));
             }
         }
+        System.out.println(this.cards);
         shuffle();
     }
 
