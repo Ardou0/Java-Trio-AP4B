@@ -38,16 +38,4 @@ public class Joueur implements Actor {
     public void setupHand(List<Card> initialCards) {
         this.hand = new ActorHand(initialCards);
     }
-
-    /**
-     * Gère le tour d'un joueur humain.
-     * Cette méthode devra être connectée à l'interface graphique ou textuelle
-     * pour permettre au joueur de choisir ses actions (révéler une carte, etc.).
-     *
-     * @param game L'état actuel du jeu.
-     */
-    @Override
-    public void playTurn(Game game) {
-        System.out.println("C'est au tour de " + name + " de jouer.");
-    }
 }

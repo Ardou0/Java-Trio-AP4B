@@ -29,13 +29,4 @@ public interface Actor {
      * @param initialCards Les cartes distribuées au début du jeu.
      */
     void setupHand(List<Card> initialCards);
-
-    /**
-     * Exécute les actions du tour d'un acteur.
-     * L'implémentation de cette méthode contiendra la logique de décision
-     * (pour une IA) ou les appels à l'interface utilisateur (pour un joueur humain).
-     *
-     * @param game L'état actuel du jeu, fournissant le contexte nécessaire pour prendre une décision.
-     */
-    void playTurn(Game game);
 }

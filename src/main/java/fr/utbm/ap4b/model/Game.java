@@ -24,11 +24,8 @@ public class Game {
     private CompletedTrios completedTrios;
     private boolean isGameStarted;
     private Actor winner = null;
-
     private List<CardLocation> revealedCards;
     private List<Card> cardsInPlayThisTurn;
-
-    // Fields for card exchange mechanism
     private GamePhase currentPhase;
     private Set<Actor> playersAllowedToSwap;
     private Set<Actor> playersWhoHaveSwapped;
@@ -70,29 +67,112 @@ public class Game {
         initializePlayers();
     }
 
-    private void initializePlayers() {
-        this.players = new ArrayList<>();
-        if (isTeamMode) {
-            int playerIndex = 0;
-            for (String name : playerNames) {
-                players.add(new JoueurEquipe(name, playerIndex++));
-            }
 
-            int teamMateOffset = players.size() / 2;
-            for (int i = 0; i < teamMateOffset; i++) {
-                JoueurEquipe p1 = (JoueurEquipe) players.get(i);
-                JoueurEquipe p2 = (JoueurEquipe) players.get(i + teamMateOffset);
-                p1.setTeammate(p2);
-                p2.setTeammate(p1);
+    public List<CardLocation> getRevealedCards() {
+        return revealedCards;
+    }
+
+    public int getPlayerTurn() {
+        return playerTurn;
+    }
+
+    public Actor getCurrentPlayer() {
+        return players.get(playerTurn);
+    }
+
+    public List<Actor> getPlayers() {
+        return players;
+    }
+
+    public DrawPile getDrawPile() {
+        return drawPile;
+    }
+
+    public CompletedTrios getCompletedTrios() {
+        return completedTrios;
+    }
+
+    public Actor getWinner() {
+        return this.winner;
+    }
+
+    public GamePhase getCurrentPhase() {
+        return currentPhase;
+    }
+
+    public Set<Actor> getPlayersAllowedToSwap() {
+        return playersAllowedToSwap;
+    }
+
+    public boolean isGameStarted() {
+        return isGameStarted;
+    }
+
+    public boolean isGameEnded() {
+        this.winner = completedTrios.getWinner(this);
+        return this.winner != null;
+    }
+
+    public boolean isPiquant() {
+        return isPiquant;
+    }
+
+    public boolean isTeamMode() {
+        return isTeamMode;
+    }
+
+    public void nextPlayer() {
+        this.playerTurn = (this.playerTurn + 1) % this.players.size();
+    }
+
+    public void revealCardFromDrawPile(Card card) {
+        if (canRevealCard() && !cardsInPlayThisTurn.contains(card)) {
+            this.revealedCards.add(CardLocation.fromDrawPile(card, this.drawPile));
+            this.cardsInPlayThisTurn.add(card);
+        }
+    }
+
+    public boolean canRevealCard() {
+        if (currentPhase != GamePhase.PLAYING) return false; // Can't reveal during swap
+        if (revealedCards.size() >= 3) {
+            return false;
+        }
+        if (revealedCards.size() == 2) {
+            Card card1 = revealedCards.get(0).getCard();
+            Card card2 = revealedCards.get(1).getCard();
+            if (card1.getValue() != card2.getValue()) {
+                return false;
             }
-        } else {
-            int playerIndex = 0;
-            for (String name : playerNames) {
-                players.add(new Joueur(name, playerIndex++));
-            }
-            for (int i = 0; i < numAI; i++) {
-                players.add(new IA("IA " + (i + 1), playerIndex++));
-            }
+        }
+        return true;
+    }
+
+    public void processTrio(List<Card> trio) {
+        if (trio == null || trio.size() != 3) return;
+
+        for (Card card : trio) {
+            revealedCards.stream()
+                    .filter(loc -> loc.getCard().equals(card))
+                    .findFirst()
+                    .ifPresent(CardLocation::removeFromSource);
+        }
+
+        clearRevealedCards();
+    }
+
+    public void revealLargestCardFromPlayer(int playerIndex) {
+        Actor player = players.get(playerIndex);
+        Card card = player.getHand().getLargestCard();
+        if (card != null) {
+            revealCardFromPlayer(card, player);
+        }
+    }
+
+    public void revealSmallestCardFromPlayer(int playerIndex) {
+        Actor player = players.get(playerIndex);
+        Card card = player.getHand().getSmallestCard();
+        if (card != null) {
+            revealCardFromPlayer(card, player);
         }
     }
 
@@ -153,19 +233,6 @@ public class Game {
         return true;
     }
 
-    private void checkAndEndSwapPhase() {
-        if (playersWhoHaveSwapped.size() >= playersAllowedToSwap.size()) {
-            if (currentPhase == GamePhase.INITIAL_SWAP) {
-                System.out.println("Phase d'échange initiale terminée. La partie commence !");
-            } else { // POST_TRIO_SWAP
-                System.out.println("Phase d'échange terminée. Le jeu reprend.");
-            }
-            this.currentPhase = GamePhase.PLAYING;
-            this.playersAllowedToSwap.clear();
-            this.playersWhoHaveSwapped.clear();
-        }
-    }
-
 
     public boolean nextTurn() {
         if (this.isGameEnded() || !this.isGameStarted) {
@@ -219,20 +286,25 @@ public class Game {
         }
     }
 
-    public void revealLargestCardFromPlayer(int playerIndex) {
-        Actor player = players.get(playerIndex);
-        Card card = player.getHand().getLargestCard();
-        if (card != null) {
-            revealCardFromPlayer(card, player);
+    private void checkAndEndSwapPhase() {
+        if (playersWhoHaveSwapped.size() >= playersAllowedToSwap.size()) {
+            if (currentPhase == GamePhase.INITIAL_SWAP) {
+                System.out.println("Phase d'échange initiale terminée. La partie commence !");
+            } else { // POST_TRIO_SWAP
+                System.out.println("Phase d'échange terminée. Le jeu reprend.");
+            }
+            this.currentPhase = GamePhase.PLAYING;
+            this.playersAllowedToSwap.clear();
+            this.playersWhoHaveSwapped.clear();
         }
     }
 
-    public void revealSmallestCardFromPlayer(int playerIndex) {
-        Actor player = players.get(playerIndex);
-        Card card = player.getHand().getSmallestCard();
-        if (card != null) {
-            revealCardFromPlayer(card, player);
+    private void clearRevealedCards() {
+        for (CardLocation card : revealedCards) {
+            card.getCard().toggleIterable();
         }
+        this.revealedCards.clear();
+        this.cardsInPlayThisTurn.clear();
     }
 
     private void revealCardFromPlayer(Card card, Actor player) {
@@ -242,103 +314,29 @@ public class Game {
         }
     }
 
-    public void revealCardFromDrawPile(Card card) {
-        if (canRevealCard() && !cardsInPlayThisTurn.contains(card)) {
-            this.revealedCards.add(CardLocation.fromDrawPile(card, this.drawPile));
-            this.cardsInPlayThisTurn.add(card);
-        }
-    }
+    private void initializePlayers() {
+        this.players = new ArrayList<>();
+        if (isTeamMode) {
+            int playerIndex = 0;
+            for (String name : playerNames) {
+                players.add(new JoueurEquipe(name, playerIndex++));
+            }
 
-    public boolean canRevealCard() {
-        if (currentPhase != GamePhase.PLAYING) return false; // Can't reveal during swap
-        if (revealedCards.size() >= 3) {
-            return false;
-        }
-        if (revealedCards.size() == 2) {
-            Card card1 = revealedCards.get(0).getCard();
-            Card card2 = revealedCards.get(1).getCard();
-            if (card1.getValue() != card2.getValue()) {
-                return false;
+            int teamMateOffset = players.size() / 2;
+            for (int i = 0; i < teamMateOffset; i++) {
+                JoueurEquipe p1 = (JoueurEquipe) players.get(i);
+                JoueurEquipe p2 = (JoueurEquipe) players.get(i + teamMateOffset);
+                p1.setTeammate(p2);
+                p2.setTeammate(p1);
+            }
+        } else {
+            int playerIndex = 0;
+            for (String name : playerNames) {
+                players.add(new Joueur(name, playerIndex++));
+            }
+            for (int i = 0; i < numAI; i++) {
+                players.add(new IA("IA " + (i + 1), playerIndex++));
             }
         }
-        return true;
-    }
-
-    public void processTrio(List<Card> trio) {
-        if (trio == null || trio.size() != 3) return;
-
-        for (Card card : trio) {
-            revealedCards.stream()
-                    .filter(loc -> loc.getCard().equals(card))
-                    .findFirst()
-                    .ifPresent(CardLocation::removeFromSource);
-        }
-
-        clearRevealedCards();
-    }
-
-    private void clearRevealedCards() {
-        for(CardLocation card : revealedCards) {
-            card.getCard().toggleIterable();
-        }
-        this.revealedCards.clear();
-        this.cardsInPlayThisTurn.clear();
-    }
-
-    public List<CardLocation> getRevealedCards() {
-        return revealedCards;
-    }
-
-    public boolean isPiquant() {
-        return isPiquant;
-    }
-
-    public boolean isTeamMode() {
-        return isTeamMode;
-    }
-
-    public int getPlayerTurn() {
-        return playerTurn;
-    }
-
-    public Actor getCurrentPlayer() {
-        return players.get(playerTurn);
-    }
-
-    public void nextPlayer() {
-        this.playerTurn = (this.playerTurn + 1) % this.players.size();
-    }
-
-    public List<Actor> getPlayers() {
-        return players;
-    }
-
-    public DrawPile getDrawPile() {
-        return drawPile;
-    }
-
-    public CompletedTrios getCompletedTrios() {
-        return completedTrios;
-    }
-
-    public boolean isGameStarted() {
-        return isGameStarted;
-    }
-
-    public Actor getWinner() {
-        return this.winner;
-    }
-
-    public boolean isGameEnded() {
-        this.winner = completedTrios.getWinner(this);
-        return this.winner != null;
-    }
-
-    public GamePhase getCurrentPhase() {
-        return currentPhase;
-    }
-
-    public Set<Actor> getPlayersAllowedToSwap() {
-        return playersAllowedToSwap;
     }
 }

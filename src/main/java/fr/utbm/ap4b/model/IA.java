@@ -37,23 +37,4 @@ public class IA implements Actor {
     public void setupHand(List<Card> initialCards) {
         this.hand = new ActorHand(initialCards);
     }
-
-    /**
-     * Gère le tour d'un joueur IA.
-     * Cette méthode contiendra la logique de décision pour que l'IA joue automatiquement.
-     *
-     * @param game L'état actuel du jeu.
-     */
-    @Override
-    public void playTurn(Game game) {
-        // TODO: Implémenter la logique de décision de l'IA.
-        // Stratégie possible :
-        // 1. Analyser les cartes connues (sa propre main, les cartes révélées).
-        // 2. Déterminer la meilleure action pour former un trio (révéler une carte, etc.).
-        // 3. Exécuter l'action en mettant à jour l'état du jeu.
-        System.out.println("L'IA " + name + " réfléchit à son coup...");
-
-        // Pour l'instant, l'IA passe simplement son tour.
-        game.nextPlayer();
-    }
 }
