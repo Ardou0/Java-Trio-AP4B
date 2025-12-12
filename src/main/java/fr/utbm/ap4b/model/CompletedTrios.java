@@ -2,9 +2,7 @@ package fr.utbm.ap4b.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Représente l'ensemble des trios complétés par chaque joueur au cours de la partie.
@@ -44,6 +42,9 @@ public class CompletedTrios {
      * @return L'acteur gagnant, ou null s'il n'y a pas encore de gagnant.
      */
     public Actor getWinner(Game game) {
+        if (!game.getPlayers().isEmpty() && game.getPlayers().get(0) instanceof JoueurEquipe && game.isTeamMode()) {
+            return getTeamWinner(game);
+        }
         return getIndividualWinner(game);
     }
 
@@ -63,6 +64,49 @@ public class CompletedTrios {
             } else {
                 if (playerTrios.size() >= 3) {
                     return player;
+                }
+            }
+        }
+        return null;
+    }
+
+    private Actor getTeamWinner(Game game) {
+        List<Actor> checkedPlayers = new ArrayList<>();
+        for (Actor player : game.getPlayers()) {
+            if (checkedPlayers.contains(player)) {
+                continue;
+            }
+
+            if (player instanceof JoueurEquipe) {
+                JoueurEquipe teamPlayer1 = (JoueurEquipe) player;
+                JoueurEquipe teamPlayer2 = teamPlayer1.getTeammate();
+
+                if (teamPlayer2 == null) {
+                    continue;
+                }
+
+                List<List<Card>> teamTrios = new ArrayList<>(getTriosForPlayer(teamPlayer1.getPlayerIndex()));
+                teamTrios.addAll(getTriosForPlayer(teamPlayer2.getPlayerIndex()));
+
+                checkedPlayers.add(teamPlayer1);
+                checkedPlayers.add(teamPlayer2);
+
+                if (teamTrios.isEmpty()) {
+                    continue;
+                }
+
+                if (hasTrioOfSevens(teamTrios)) {
+                    return teamPlayer1;
+                }
+
+                if (game.isPiquant()) {
+                    if (hasNeighboringTrios(teamTrios)) {
+                        return teamPlayer1;
+                    }
+                } else {
+                    if (teamTrios.size() >= 3) {
+                        return teamPlayer1;
+                    }
                 }
             }
         }

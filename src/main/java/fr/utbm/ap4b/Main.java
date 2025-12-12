@@ -38,7 +38,7 @@ public class Main {
 
     private static void runTeamGame(Scanner scanner) {
         List<String> playerNames = Arrays.asList("Joueur A1", "Joueur B1", "Joueur A2", "Joueur B2");
-        Game game = new Game(playerNames, 0, true, false);
+        Game game = new Game(playerNames, 0, true, true);
         System.out.println("\nLancement d'une partie en Mode Équipe.");
         System.out.println("Équipe A: Joueur A1 & Joueur A2 | Équipe B: Joueur B1 & Joueur B2");
         game.startGame();
@@ -91,7 +91,12 @@ public class Main {
         System.out.println("La partie est terminée !");
         Actor winner = game.getWinner();
         if (winner != null) {
-            System.out.println("Le gagnant est " + winner.getName() + "!");
+            if (winner instanceof JoueurEquipe) {
+                JoueurEquipe winningPlayer = (JoueurEquipe) winner;
+                System.out.println("Le gagnant est l'équipe de " + winningPlayer.getName() + " et " + winningPlayer.getTeammate().getName() + "!");
+            } else {
+                System.out.println("Le gagnant est " + winner.getName() + "!");
+            }
         } else {
             System.out.println("La partie s'est terminée sans gagnant.");
         }
