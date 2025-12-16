@@ -1,12 +1,16 @@
 package fr.utbm.ap4b;
 
 import fr.utbm.ap4b.model.*;
+import fr.utbm.ap4b.vue.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
+        TrioView.main(args);
+    }
+    public void console() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Choisissez un mode de jeu :");
         System.out.println("1: Mode Solo (3 Joueurs)");
