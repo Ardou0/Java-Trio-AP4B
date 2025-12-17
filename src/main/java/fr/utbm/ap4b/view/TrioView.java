@@ -1,82 +1,104 @@
-package fr.utbm.ap4b.vue;
+package fr.utbm.ap4b.view;
+import fr.utbm.ap4b.controller.*;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
+import java.io.InputStream;
 
 /**
- * Vue principale du jeu Trio avec JavaFX (pattern MVC)
+ * Vue principale du jeu Trio avec JavaFX
  * Responsabilités : affichage et interaction utilisateur
  */
-public class TrioView extends Application {
+public class TrioView  {
 
     // Composants graphiques principaux
-    private GridPane plateauGrid;
-    private Label labelScore;
-    private Label labelMessage;
-    private Button btnNouvellePartie;
-    private BorderPane root;
+    private GridPane handGrid;       // Grille pour les cartes
+    private Label labelMessage;        // Messages d'information
+    private Button btnNewGame;  // Bouton de contrôle
+    private BorderPane root;// Conteneur principal
 
     // Référence au contrôleur
     private TrioController controller;
 
-    @Override
-    public void start(Stage primaryStage) {
-        primaryStage.setTitle("Jeu Trio");
+    public TrioView(){
+        //copie et changer nom fonction
+        showScreen();
+    }
 
+    //Affiche la page javaFX
+    private void showScreen(){
         root = new BorderPane();
         root.setPadding(new Insets(10));
-
-        // Création des différentes zones
-        root.setCenter(creerZonePlateau());
-        root.setBottom(creerZoneControles());
-        root.setTop(creerZoneInfo());
-
-        Scene scene = new Scene(root, 800, 600);
-
-        // Optionnel : ajouter un fichier CSS pour le style
-        // scene.getStylesheets().add("style.css");
-
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        root.setCenter(createHandArea());
+        root.setTop(createInfoArea());
+        root.setBottom(createControlArea());
     }
 
     /**
-     * Crée la zone du plateau de jeu
+     * Crée la zone de pioche
      */
-    private GridPane creerZonePlateau() {
-        plateauGrid = new GridPane();
-        plateauGrid.setAlignment(Pos.CENTER);
-        plateauGrid.setHgap(10);
-        plateauGrid.setVgap(10);
-        plateauGrid.setPadding(new Insets(20));
+    private GridPane createHandArea() {
+        handGrid = new GridPane();
+        handGrid.setAlignment(Pos.CENTER);
+        handGrid.setHgap(10); // Espace horizontal de 10 px entre les colonnes de la grille
+        handGrid.setVgap(10); // Espace vertical de 10 px entre les lignes de la grille
+        handGrid.setPadding(new Insets(20));
+
+        //Label d'affiche des caryes
+        Label cardLabel = new Label("Tes cartes");
+        cardLabel.setStyle("-fx-font-size: 40px;");
+        cardLabel.setAlignment(Pos.CENTER);
+        cardLabel.setMaxWidth(Double.MAX_VALUE);
+        // Label prend 3 colonnes de large sur 1 ligne de haut (colonne_début, ligne_début, nombre_colonnes, nombre_lignes)
+        handGrid.add(cardLabel, 0, 0, 5, 1);
+
+        //Charger l'image verso pour les afficher
+        Image imageVerso = null;
+
+        InputStream is = getClass().getResourceAsStream("/images/carte_verso.png");
+        if (is != null) {
+            imageVerso = new Image(is);
+        } else {
+            System.err.println("Fichier carte_verso.png non trouvé !");
+        }
+
+        for (int i = 0; i < 9; i++) {
+            ImageView cardView = new ImageView(imageVerso);
+
+            // Définit la taille
+            cardView.setFitWidth(100);
+            cardView.setFitHeight(150);
+            cardView.setPreserveRatio(true);
+
+            int column = i % 5;
+            int line = (i / 5) + 1;
+            handGrid.add(cardView, column, line);
+        }
 
         // Style du plateau
-        plateauGrid.setStyle("-fx-background-color: #f0f0f0;");
+        handGrid.setStyle("-fx-background-color: #f0f0f0;");
 
-        return plateauGrid;
+        return handGrid;
     }
 
     /**
      * Crée la zone d'informations (score, messages)
      */
-    private VBox creerZoneInfo() {
-        VBox infoBox = new VBox(10);
+    private VBox createInfoArea() {
+        VBox infoBox = new VBox(10); //Separation de 10px entre chaque composant
         infoBox.setAlignment(Pos.CENTER);
         infoBox.setPadding(new Insets(10));
-
-        labelScore = new Label("Score: 0");
-        labelScore.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
         labelMessage = new Label("Bienvenue au jeu Trio !");
         labelMessage.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
 
-        infoBox.getChildren().addAll(labelScore, labelMessage);
+        infoBox.getChildren().addAll(labelMessage);
 
         return infoBox;
     }
@@ -84,29 +106,26 @@ public class TrioView extends Application {
     /**
      * Crée la zone des contrôles (boutons)
      */
-    private HBox creerZoneControles() {
+    private HBox createControlArea() {
         HBox controles = new HBox(15);
         controles.setAlignment(Pos.CENTER);
         controles.setPadding(new Insets(10));
 
-        btnNouvellePartie = new Button("Nouvelle Partie");
-        btnNouvellePartie.setStyle("-fx-font-size: 14px; -fx-padding: 10px 20px;");
-        btnNouvellePartie.setOnAction(e -> {
-            if (controller != null) {
-                controller.nouvellePartie();
-            }
-        });
+        btnNewGame = new Button("Nouvelle Partie");
+        btnNewGame.setStyle("-fx-font-size: 14px; -fx-padding: 10px 20px;");
+//        btnNewGame.setOnAction(e -> {
+//            if (controller != null) {
+//                controller.nouvellePartie();
+//            }
+//        }); mettre dans le controlleur plus tard
 
-        controles.getChildren().add(btnNouvellePartie);
+        controles.getChildren().add(btnNewGame);
 
         return controles;
     }
 
-    /**
-     * Attache le contrôleur à la vue
-     */
-    public void setController(TrioController controller) {
-        this.controller = controller;
+    public BorderPane getRoot() {
+        return root;
     }
 
     /**
@@ -114,7 +133,7 @@ public class TrioView extends Application {
      * Appelée par le contrôleur quand le modèle change
      */
     public void afficherPlateau(/* List<Carte> cartes */) {
-        plateauGrid.getChildren().clear();
+        handGrid.getChildren().clear();
 
         // Exemple : afficher 12 cartes en grille 3x4
         int colonne = 0;
@@ -144,15 +163,8 @@ public class TrioView extends Application {
                 }
             });
 
-            plateauGrid.add(btnCarte, i % 4, i / 4);
+            handGrid.add(btnCarte, i % 4, i / 4);
         }
-    }
-
-    /**
-     * Met à jour le score affiché
-     */
-    public void mettreAJourScore(int score) {
-        labelScore.setText("Score: " + score);
     }
 
     /**
@@ -194,22 +206,4 @@ public class TrioView extends Application {
 
         return btn;
     }
-
-    /**
-     * Point d'entrée de l'application
-     */
-    public static void main(String[] args) {
-        launch(args);
-    }
-}
-
-/**
- * Interface du contrôleur (pour référence)
- * À implémenter dans une classe séparée
- */
-interface TrioController {
-    void nouvellePartie();
-    // void carteSelectionnee(int index);
-    // void carteSelectionnee(Carte carte);
-    // autres méthodes de contrôle...
 }

@@ -1,14 +1,15 @@
 package fr.utbm.ap4b;
 
 import fr.utbm.ap4b.model.*;
-import fr.utbm.ap4b.vue.*;
+import fr.utbm.ap4b.view.*;
+import fr.utbm.ap4b.controller.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
-        TrioView.main(args);
+        TrioApp.main(args);
     }
     public void console() {
         Scanner scanner = new Scanner(System.in);
