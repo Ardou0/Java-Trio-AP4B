@@ -7,13 +7,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.BorderPane;
 import javafx.geometry.Pos;
 
-public class Rules {
+public class RulesPage {
 
     private Button endBtn;  // Bouton de contrôle
     private BorderPane root;// Conteneur principal
     private HBox hBox;
 
-    public Rules(){
+    public RulesPage(){
         //copie et changer nom fonction
         showScreen();
     }
@@ -50,5 +50,9 @@ public class Rules {
 
     public BorderPane getRoot() {
         return root;
+    }
+
+    public Button getEndBtn() {
+        return endBtn;
     }
 }

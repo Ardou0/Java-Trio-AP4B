@@ -1,5 +1,4 @@
 package fr.utbm.ap4b.view;
-import fr.utbm.ap4b.controller.*;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -15,13 +14,15 @@ import java.io.InputStream;
  * Vue principale du jeu Trio avec JavaFX
  * Responsabilités : affichage et interaction utilisateur
  */
-public class TrioView  {
+public class GameMainPage {
 
-    private Label labelMessage;        // Messages d'information
-    private BorderPane root;// Conteneur principal
+    // Composants graphiques principaux
+    private Label labelMessage; // Messages d'information
+    private BorderPane root; // Conteneur principal
+    private Button rulesButton; //Bouton menant à la page de règle
 
 
-    public TrioView(){
+    public GameMainPage(){
         //copie et changer nom fonction
         showScreen();
     }
@@ -39,7 +40,6 @@ public class TrioView  {
      * Crée la zone de pioche
      */
     private GridPane createHandArea() {
-        // Composants graphiques principaux
         // Grille pour les cartes
         GridPane handGrid = new GridPane();
         handGrid.setAlignment(Pos.CENTER);
@@ -107,21 +107,16 @@ public class TrioView  {
         help.setPadding(new Insets(10));
 
         // Bouton de contrôle
-        Button btnNewGame = new Button("Rules");
-        btnNewGame.setStyle("-fx-padding: 10px 20px;" +
+        rulesButton = new Button("Rules");
+        rulesButton.setStyle("-fx-padding: 10px 20px;" +
                 "-fx-focus-color: transparent; " +
                 "-fx-faint-focus-color: transparent; " +
                 "-fx-background-radius: 10px; " +
                 "-fx-border-radius: 10px;" +
                 "-fx-border-color:black; " +
                 "-fx-font-size:14;");
-//        btnNewGame.setOnAction(e -> {
-//            if (controller != null) {
-//                controller.rulesPage();
-//            }
-//        }); mettre dans le controlleur plus tard
 
-        help.getChildren().add(btnNewGame);
+        help.getChildren().add(rulesButton);
 
         return help;
     }
@@ -129,6 +124,8 @@ public class TrioView  {
     public BorderPane getRoot() {
         return root;
     }
+
+    public Button getRulesButton(){ return rulesButton;}
 
     /**
      * Affiche un message à l'utilisateur

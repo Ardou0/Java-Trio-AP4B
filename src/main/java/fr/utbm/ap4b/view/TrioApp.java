@@ -1,18 +1,22 @@
 package fr.utbm.ap4b.view;
 
+import fr.utbm.ap4b.controller.TrioController;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 public class TrioApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         //Initialisation de la vue
-        TrioView view = new TrioView();
-        //Rules view = new  Rules();
+        TrioController controller = new TrioController(primaryStage);
+
+        //Recupere la vue du controlleur
+        BorderPane gameView = controller.getView().getRoot();
 
         //Initialisation de la fenêtre
-        Scene scene = new Scene(view.getRoot(), 1200,800);
+        Scene scene = new Scene(gameView, 1200,800);
 
         primaryStage.setTitle("Jeu du Trio"); //Nom de la page
         primaryStage.setScene(scene); //Creation de la scene
