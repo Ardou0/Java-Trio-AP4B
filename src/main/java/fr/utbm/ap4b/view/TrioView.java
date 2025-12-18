@@ -17,14 +17,9 @@ import java.io.InputStream;
  */
 public class TrioView  {
 
-    // Composants graphiques principaux
-    private GridPane handGrid;       // Grille pour les cartes
     private Label labelMessage;        // Messages d'information
-    private Button btnNewGame;  // Bouton de contrôle
     private BorderPane root;// Conteneur principal
 
-    // Référence au contrôleur
-    private TrioController controller;
 
     public TrioView(){
         //copie et changer nom fonction
@@ -36,23 +31,26 @@ public class TrioView  {
         root = new BorderPane();
         root.setPadding(new Insets(10));
         root.setCenter(createHandArea());
-        root.setTop(createInfoArea());
-        root.setBottom(createControlArea());
+        root.setTop(createRulesButton());
+        root.setStyle("-fx-background-color: #E2CAA2;");
     }
 
     /**
      * Crée la zone de pioche
      */
     private GridPane createHandArea() {
-        handGrid = new GridPane();
+        // Composants graphiques principaux
+        // Grille pour les cartes
+        GridPane handGrid = new GridPane();
         handGrid.setAlignment(Pos.CENTER);
         handGrid.setHgap(10); // Espace horizontal de 10 px entre les colonnes de la grille
         handGrid.setVgap(10); // Espace vertical de 10 px entre les lignes de la grille
         handGrid.setPadding(new Insets(20));
+        handGrid.setStyle("-fx-background-color: #E2CAA2;");
 
         //Label d'affiche des caryes
         Label cardLabel = new Label("Tes cartes");
-        cardLabel.setStyle("-fx-font-size: 40px;");
+        cardLabel.setStyle("-fx-font-size: 40px; -fx-background-color: #E2CAA2;");
         cardLabel.setAlignment(Pos.CENTER);
         cardLabel.setMaxWidth(Double.MAX_VALUE);
         // Label prend 3 colonnes de large sur 1 ligne de haut (colonne_début, ligne_début, nombre_colonnes, nombre_lignes)
@@ -81,90 +79,55 @@ public class TrioView  {
             handGrid.add(cardView, column, line);
         }
 
-        // Style du plateau
-        handGrid.setStyle("-fx-background-color: #f0f0f0;");
-
         return handGrid;
     }
 
-    /**
-     * Crée la zone d'informations (score, messages)
-     */
-    private VBox createInfoArea() {
-        VBox infoBox = new VBox(10); //Separation de 10px entre chaque composant
-        infoBox.setAlignment(Pos.CENTER);
-        infoBox.setPadding(new Insets(10));
-
-        labelMessage = new Label("Bienvenue au jeu Trio !");
-        labelMessage.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
-
-        infoBox.getChildren().addAll(labelMessage);
-
-        return infoBox;
-    }
+//    /**
+//     * Crée la zone d'informations (score, messages)
+//     */
+//    private VBox createInfoArea() {
+//        VBox infoBox = new VBox(10); //Separation de 10px entre chaque composant
+//        infoBox.setAlignment(Pos.CENTER);
+//        infoBox.setPadding(new Insets(10));
+//
+//        labelMessage = new Label("Bienvenue au jeu Trio !");
+//        labelMessage.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
+//
+//        infoBox.getChildren().addAll(labelMessage);
+//
+//        return infoBox;
+//    }
 
     /**
      * Crée la zone des contrôles (boutons)
      */
-    private HBox createControlArea() {
-        HBox controles = new HBox(15);
-        controles.setAlignment(Pos.CENTER);
-        controles.setPadding(new Insets(10));
+    private HBox createRulesButton() {
+        HBox help = new HBox(15);
+        help.setAlignment(Pos.TOP_RIGHT);
+        help.setPadding(new Insets(10));
 
-        btnNewGame = new Button("Nouvelle Partie");
-        btnNewGame.setStyle("-fx-font-size: 14px; -fx-padding: 10px 20px;");
+        // Bouton de contrôle
+        Button btnNewGame = new Button("Rules");
+        btnNewGame.setStyle("-fx-padding: 10px 20px;" +
+                "-fx-focus-color: transparent; " +
+                "-fx-faint-focus-color: transparent; " +
+                "-fx-background-radius: 10px; " +
+                "-fx-border-radius: 10px;" +
+                "-fx-border-color:black; " +
+                "-fx-font-size:14;");
 //        btnNewGame.setOnAction(e -> {
 //            if (controller != null) {
-//                controller.nouvellePartie();
+//                controller.rulesPage();
 //            }
 //        }); mettre dans le controlleur plus tard
 
-        controles.getChildren().add(btnNewGame);
+        help.getChildren().add(btnNewGame);
 
-        return controles;
+        return help;
     }
 
     public BorderPane getRoot() {
         return root;
-    }
-
-    /**
-     * Met à jour l'affichage du plateau
-     * Appelée par le contrôleur quand le modèle change
-     */
-    public void afficherPlateau(/* List<Carte> cartes */) {
-        handGrid.getChildren().clear();
-
-        // Exemple : afficher 12 cartes en grille 3x4
-        int colonne = 0;
-        int ligne = 0;
-
-        // for (Carte carte : cartes) {
-        //     Button btnCarte = creerBoutonCarte(carte);
-        //     plateauGrid.add(btnCarte, colonne, ligne);
-        //
-        //     colonne++;
-        //     if (colonne > 3) {
-        //         colonne = 0;
-        //         ligne++;
-        //     }
-        // }
-
-        // Exemple de boutons vides pour visualiser la structure
-        for (int i = 0; i < 12; i++) {
-            Button btnCarte = new Button("Carte " + (i+1));
-            btnCarte.setPrefSize(120, 180);
-            btnCarte.setStyle("-fx-font-size: 12px;");
-
-            int index = i;
-            btnCarte.setOnAction(e -> {
-                if (controller != null) {
-                    // controller.carteSelectionnee(index);
-                }
-            });
-
-            handGrid.add(btnCarte, i % 4, i / 4);
-        }
     }
 
     /**
@@ -174,36 +137,4 @@ public class TrioView  {
         labelMessage.setText(message);
     }
 
-    /**
-     * Crée un bouton pour une carte (exemple)
-     */
-    private Button creerBoutonCarte(/* Carte carte */) {
-        Button btn = new Button(/* carte.toString() */);
-        btn.setPrefSize(120, 180);
-
-        // Style selon l'état de la carte
-        btn.setStyle("-fx-background-color: white; " +
-                "-fx-border-color: #333; " +
-                "-fx-border-width: 2px; " +
-                "-fx-font-size: 12px;");
-
-        // Effet hover
-        btn.setOnMouseEntered(e ->
-                btn.setStyle("-fx-background-color: #e0e0e0; " +
-                        "-fx-border-color: #333; " +
-                        "-fx-border-width: 2px;"));
-
-        btn.setOnMouseExited(e ->
-                btn.setStyle("-fx-background-color: white; " +
-                        "-fx-border-color: #333; " +
-                        "-fx-border-width: 2px;"));
-
-        btn.setOnAction(e -> {
-            if (controller != null) {
-                // controller.carteSelectionnee(carte);
-            }
-        });
-
-        return btn;
-    }
 }

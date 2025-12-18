@@ -5,7 +5,7 @@ public class TrioController {
 
     private TrioView vue;
 
-    public void nouvellePartie() {
+    public void rulesPage() {
         // void carteSelectionnee(int index);
         // void carteSelectionnee(Carte carte);
         // autres méthodes de contrôle..

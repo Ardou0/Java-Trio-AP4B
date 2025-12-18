@@ -1,6 +1,5 @@
 package fr.utbm.ap4b.view;
 
-import fr.utbm.ap4b.view.TrioView;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -13,7 +12,7 @@ public class TrioApp extends Application {
         //Rules view = new  Rules();
 
         //Initialisation de la fenêtre
-        Scene scene = new Scene(view.getRoot(), 800,600);
+        Scene scene = new Scene(view.getRoot(), 1200,800);
 
         primaryStage.setTitle("Jeu du Trio"); //Nom de la page
         primaryStage.setScene(scene); //Creation de la scene
