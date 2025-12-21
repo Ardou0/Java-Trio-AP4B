@@ -9,9 +9,23 @@ import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
-        TrioApp.main(args);
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Mode de l'app :");
+        System.out.println("1: Graphique");
+        System.out.println("2: Console");
+        System.out.print("Votre choix : ");
+
+        String choice = scanner.nextLine().trim();
+
+        if ("1".equals(choice)) {
+            TrioApp.main(args);
+        }
+        else {
+            Main.console();
+        }
+
     }
-    public void console() {
+    public static void console() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Choisissez un mode de jeu :");
         System.out.println("1: Mode Solo (3 Joueurs)");

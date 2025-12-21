@@ -16,25 +16,7 @@ public class Card {
         this.value = trio.getValue();
         this.name = trio.name();
         this.neighbors = trio.getNeighbors();
-        this.imagePath = "";
-        this.iterable = true;
-    }
-
-    // Keep old constructors but add the ID initialization
-    public Card(int value, String name, int[] neighbors) {
-        this.id = UUID.randomUUID();
-        this.value = value;
-        this.name = name;
-        this.neighbors = neighbors;
-        this.iterable = true;
-    }
-
-    public Card(int value, String name, int[] neighbors, String imagePath) {
-        this.id = UUID.randomUUID();
-        this.value = value;
-        this.name = name;
-        this.neighbors = neighbors;
-        this.imagePath = imagePath;
+        this.imagePath = "/images/carte_" + trio.getValue() + ".png";
         this.iterable = true;
     }
 
