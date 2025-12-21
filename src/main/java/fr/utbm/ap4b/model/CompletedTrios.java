@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Représente l'ensemble des trios complétés par chaque joueur au cours de la partie.
+ * Représente l'ensemble des trios complétés par chaque joueur/équipe au cours de la partie.
  */
 public class CompletedTrios {
 

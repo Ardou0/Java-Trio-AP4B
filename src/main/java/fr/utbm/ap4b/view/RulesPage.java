@@ -17,7 +17,6 @@ public class RulesPage {
     private HBox hBox;
 
     public RulesPage(){
-        //copie et changer nom fonction
         showScreen();
     }
 
@@ -111,11 +110,11 @@ public class RulesPage {
         hBox.setAlignment(Pos.TOP_RIGHT);
         hBox.setPadding(new Insets(10));
 
-        endBtn = new Button("X");
+        endBtn = new Button("Retour");
         // Style du bouton de fermeture
-        endBtn.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #e74c3c; -fx-background-radius: 5;");
-        endBtn.setOnMouseEntered(e -> endBtn.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #c0392b; -fx-background-radius: 5;"));
-        endBtn.setOnMouseExited(e -> endBtn.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white; -fx-background-color: #e74c3c; -fx-background-radius: 5;"));
+        endBtn.setStyle("-fx-background-color: #e74c3c;");
+        endBtn.setOnMouseEntered(e -> endBtn.setStyle("-fx-background-color: #c0392b;"));
+        endBtn.setOnMouseExited(e -> endBtn.setStyle("-fx-background-color: #e74c3c;"));
 
         hBox.getChildren().add(endBtn);
 
@@ -125,7 +124,11 @@ public class RulesPage {
     private VBox createRuleCell(String title, String content, String bgColor) {
         VBox box = new VBox(10); // Espacement vertical de 10
         box.setPadding(new Insets(20));
-        box.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);");
+        box.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 10;" +
+                " -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0); " +
+                "-fx-border-color: #0D1117; " +
+                "-fx-border-width: 3; " +
+                "-fx-border-radius: 10;");
         box.setAlignment(Pos.TOP_LEFT);
 
         // Titre

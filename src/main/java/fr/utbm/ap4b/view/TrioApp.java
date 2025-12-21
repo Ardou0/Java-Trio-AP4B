@@ -6,6 +6,8 @@ import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
+import java.util.Objects;
+
 public class TrioApp extends Application {
     @Override
     public void start(Stage primaryStage) {
@@ -17,6 +19,8 @@ public class TrioApp extends Application {
 
         //Initialisation de la fenêtre
         Scene scene = new Scene(gameView, 1200,800);
+
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/style.css")).toExternalForm());
 
         primaryStage.setTitle("Jeu du Trio"); //Nom de la page
         primaryStage.setScene(scene); //Creation de la scene

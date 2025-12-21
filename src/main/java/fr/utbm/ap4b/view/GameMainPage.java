@@ -20,6 +20,10 @@ public class GameMainPage {
     private Label labelMessage; // Messages d'information
     private BorderPane root; // Conteneur principal
     private Button rulesButton; //Bouton menant à la page de règle
+    private HBox bottomBoardContainer; //Board montrant cartes retournées
+    private BorderPane bottomContainer;
+    private Button trioButton;
+    private Button drawPileButton;
 
 
     public GameMainPage(){
@@ -33,7 +37,102 @@ public class GameMainPage {
         root.setPadding(new Insets(10));
         root.setCenter(createHandArea());
         root.setTop(createRulesButton());
-        root.setStyle("-fx-background-color: #E2CAA2;");
+        root.setBottom(createBoardContainer());
+    }
+
+    /**
+     * Crée la zone des cases en bas de l'écran
+     */
+    private BorderPane createBoardContainer(){
+        bottomContainer = new BorderPane();
+
+        drawPileButton = new Button("Draw Pile");
+        drawPileButton.setAlignment(Pos.CENTER);
+
+        drawPileButton.setOnMouseEntered(e -> drawPileButton.setStyle("-fx-background-color: #5C4C38;"));
+        drawPileButton.setOnMouseExited(e -> drawPileButton.setStyle("-fx-background-color: #8B7355;"));
+
+        trioButton = new Button("Trio");
+        trioButton.setAlignment(Pos.CENTER);
+
+        trioButton.setOnMouseEntered(e -> trioButton.setStyle("-fx-background-color: #5C4C38;"));
+        trioButton.setOnMouseExited(e -> trioButton.setStyle("-fx-background-color: #8B7355;"));
+
+        bottomBoardContainer = new HBox(15); // 15px d'espace entre les cases
+        bottomBoardContainer.setAlignment(Pos.CENTER);
+        bottomBoardContainer.setPadding(new Insets(20,10, 30, 10));
+        bottomBoardContainer.setStyle(
+                "-fx-background-color: #E2CAA2;" +
+                "-fx-background-radius: 10 10 0 0;" +
+                "-fx-border-color: #0D1117;" +
+                "-fx-border-width: 3;" +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);" // Ombre
+        );
+
+        // Création de 3 cases
+        for (int i = 0; i < 3; i++) {
+            StackPane slot = createSlot(i);
+            bottomBoardContainer.getChildren().add(slot);
+        }
+
+        BorderPane.setAlignment(drawPileButton, Pos.CENTER);
+        bottomContainer.setLeft(drawPileButton);
+        BorderPane.setAlignment(trioButton, Pos.CENTER);
+        bottomContainer.setCenter(bottomBoardContainer);
+        bottomContainer.setRight(trioButton);
+
+        return bottomContainer;
+    }
+
+    /**
+     * Renvoie le bouton de la pioche
+     */
+    public Button getDrawPileButton(){return  drawPileButton;}
+
+    /**
+     * Renvoie le bouton de la page des trios
+     */
+    public Button getTrioButton(){return  trioButton;}
+
+    /**
+     * Crée une case individuelle (placeholder pour future carte)
+     */
+    private StackPane createSlot(int index) {
+        StackPane slot = new StackPane();
+
+        slot.setPrefSize(100, 150);
+        slot.setMinSize(100, 150);
+        slot.setMaxSize(100, 150);
+
+        slot.setStyle(
+                "-fx-border-color: #8B7355;" +
+                "-fx-border-style: dashed;" + // Bordure en pointillés
+                "-fx-border-width: 2;" +
+                "-fx-border-radius: 8;" +
+                "-fx-background-color: #F5E6D3;" +
+                "-fx-background-radius: 8;" +
+                "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" // Ombre intérieure
+        );
+
+        // Désactiver les interactions
+        slot.setMouseTransparent(true);
+
+        return slot;
+    }
+
+    //Retourne la box entière
+    public HBox getBottomBoardContainer() {
+        return bottomBoardContainer;
+    }
+
+    /**
+     * Permet d'acceder à l'index d'une case pour lui ajouter une carte
+     */
+    public StackPane getSlotAt(int index) {
+        if (index >= 0 && index < bottomBoardContainer.getChildren().size()) {
+            return (StackPane) bottomBoardContainer.getChildren().get(index);
+        }
+        return null;
     }
 
     /**
@@ -108,13 +207,9 @@ public class GameMainPage {
 
         // Bouton de contrôle
         rulesButton = new Button("Rules");
-        rulesButton.setStyle("-fx-padding: 10px 20px;" +
-                "-fx-focus-color: transparent; " +
-                "-fx-faint-focus-color: transparent; " +
-                "-fx-background-radius: 10px; " +
-                "-fx-border-radius: 10px;" +
-                "-fx-border-color:black; " +
-                "-fx-font-size:14;");
+
+        rulesButton.setOnMouseEntered(e -> rulesButton.setStyle("-fx-background-color: #5C4C38;"));
+        rulesButton.setOnMouseExited(e -> rulesButton.setStyle("-fx-background-color: #8B7355;"));
 
         help.getChildren().add(rulesButton);
 
