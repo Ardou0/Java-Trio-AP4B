@@ -17,17 +17,16 @@ import java.io.InputStream;
 public class GameMainPage {
 
     // Composants graphiques principaux
-    private Label labelMessage; // Messages d'information
+    private final int nombreJoueurs;
     private BorderPane root; // Conteneur principal
     private Button rulesButton; //Bouton menant à la page de règle
     private HBox bottomBoardContainer; //Board montrant cartes retournées
-    private BorderPane bottomContainer;
     private Button trioButton;
     private Button drawPileButton;
 
 
-    public GameMainPage(){
-        //copie et changer nom fonction
+    public GameMainPage(int nombreJoueurs){
+        this.nombreJoueurs = nombreJoueurs;
         showScreen();
     }
 
@@ -38,13 +37,14 @@ public class GameMainPage {
         root.setCenter(createHandArea());
         root.setTop(createRulesButton());
         root.setBottom(createBoardContainer());
+        root.setLeft(createOpponentArea(nombreJoueurs));
     }
 
     /**
      * Crée la zone des cases en bas de l'écran
      */
     private BorderPane createBoardContainer(){
-        bottomContainer = new BorderPane();
+        BorderPane bottomContainer = new BorderPane();
 
         drawPileButton = new Button("Draw Pile");
         drawPileButton.setAlignment(Pos.CENTER);
@@ -71,33 +71,25 @@ public class GameMainPage {
 
         // Création de 3 cases
         for (int i = 0; i < 3; i++) {
-            StackPane slot = createSlot(i);
+            StackPane slot = createSlot();
             bottomBoardContainer.getChildren().add(slot);
         }
 
         BorderPane.setAlignment(drawPileButton, Pos.CENTER);
         bottomContainer.setLeft(drawPileButton);
-        BorderPane.setAlignment(trioButton, Pos.CENTER);
+
         bottomContainer.setCenter(bottomBoardContainer);
+
+        BorderPane.setAlignment(trioButton, Pos.CENTER);
         bottomContainer.setRight(trioButton);
 
         return bottomContainer;
     }
 
     /**
-     * Renvoie le bouton de la pioche
-     */
-    public Button getDrawPileButton(){return  drawPileButton;}
-
-    /**
-     * Renvoie le bouton de la page des trios
-     */
-    public Button getTrioButton(){return  trioButton;}
-
-    /**
      * Crée une case individuelle (placeholder pour future carte)
      */
-    private StackPane createSlot(int index) {
+    public static StackPane createSlot() {
         StackPane slot = new StackPane();
 
         slot.setPrefSize(100, 150);
@@ -145,11 +137,10 @@ public class GameMainPage {
         handGrid.setHgap(10); // Espace horizontal de 10 px entre les colonnes de la grille
         handGrid.setVgap(10); // Espace vertical de 10 px entre les lignes de la grille
         handGrid.setPadding(new Insets(20));
-        handGrid.setStyle("-fx-background-color: #E2CAA2;");
 
-        //Label d'affiche des caryes
+        //Label d'affiche des cartes
         Label cardLabel = new Label("Tes cartes");
-        cardLabel.setStyle("-fx-font-size: 40px; -fx-background-color: #E2CAA2;");
+        cardLabel.setStyle("-fx-font-size: 40px; ");
         cardLabel.setAlignment(Pos.CENTER);
         cardLabel.setMaxWidth(Double.MAX_VALUE);
         // Label prend 3 colonnes de large sur 1 ligne de haut (colonne_début, ligne_début, nombre_colonnes, nombre_lignes)
@@ -181,22 +172,6 @@ public class GameMainPage {
         return handGrid;
     }
 
-//    /**
-//     * Crée la zone d'informations (score, messages)
-//     */
-//    private VBox createInfoArea() {
-//        VBox infoBox = new VBox(10); //Separation de 10px entre chaque composant
-//        infoBox.setAlignment(Pos.CENTER);
-//        infoBox.setPadding(new Insets(10));
-//
-//        labelMessage = new Label("Bienvenue au jeu Trio !");
-//        labelMessage.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
-//
-//        infoBox.getChildren().addAll(labelMessage);
-//
-//        return infoBox;
-//    }
-
     /**
      * Crée la zone des contrôles (boutons)
      */
@@ -216,6 +191,53 @@ public class GameMainPage {
         return help;
     }
 
+    private VBox createOpponentArea(int nombreJoueurs) {
+        VBox vBox = new VBox(10);
+        vBox.setAlignment(Pos.TOP_CENTER);
+        vBox.setPadding(new Insets(5));
+//        vBox.setStyle("-fx-background-color: #F5E6D3; -fx-background-radius: 10; -fx-border-color: #8B7355; -fx-border-width: 2; -fx-border-radius: 10;");
+
+        // Calcul du nombre d'adversaires
+        int nombreAdversaires = nombreJoueurs - 1;
+
+        for (int i = 0; i < nombreAdversaires; i++) {
+            // Création d'un conteneur pour un adversaire
+            BorderPane opponentPane = createOpponentPanel(i + 1, nombreAdversaires);
+            vBox.getChildren().add(opponentPane);
+        }
+
+        return vBox;
+    }
+
+    /**
+     * Crée un panneau pour un adversaire spécifique
+     */
+    private BorderPane createOpponentPanel(int adversaireNumero, int totalAdversaires) {
+        BorderPane opponentPane = new BorderPane();
+        opponentPane.setPrefSize(120, 50);
+        opponentPane.setMinSize(120, 50);
+        opponentPane.setStyle(
+                "-fx-background-color: #8B7355;" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-color: black;" +
+                "-fx-border-width: 2;" +
+                "-fx-border-radius: 10;" +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);"
+        );
+        opponentPane.setPadding(new Insets(5));
+
+        // Nom du joueur
+        Label playerName = new Label("Joueur " + adversaireNumero);
+        playerName.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
+        playerName.setAlignment(Pos.CENTER);
+        playerName.setMaxWidth(Double.MAX_VALUE);
+        playerName.setWrapText(true); // Permet au texte de passer à la ligne si trop long
+        opponentPane.setCenter(playerName);
+        BorderPane.setAlignment(playerName, Pos.CENTER);
+
+        return opponentPane;
+    }
+
     public BorderPane getRoot() {
         return root;
     }
@@ -223,10 +245,12 @@ public class GameMainPage {
     public Button getRulesButton(){ return rulesButton;}
 
     /**
-     * Affiche un message à l'utilisateur
+     * Renvoie le bouton de la pioche
      */
-    public void afficherMessage(String message) {
-        labelMessage.setText(message);
-    }
+    public Button getDrawPileButton(){return  drawPileButton;}
 
+    /**
+     * Renvoie le bouton de la page des trios
+     */
+    public Button getTrioButton(){return  trioButton;}
 }

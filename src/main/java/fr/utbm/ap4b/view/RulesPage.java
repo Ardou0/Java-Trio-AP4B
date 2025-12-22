@@ -80,7 +80,6 @@ public class RulesPage {
         // Cellule 3 (Droite Bas)
         VBox cell3 = createRuleCell(title3, content3, "#FFF3E0"); // Orange très clair
 
-        // Ajout au GridPane : grid.add(node, columnIndex, rowIndex, columnSpan, rowSpan)
         // La cellule 1 occupe la colonne 0, ligne 0, s'étend sur 1 colonne et 2 lignes
         grid.add(cell1, 0, 0, 1, 2);
 

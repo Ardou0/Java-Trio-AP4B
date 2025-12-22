@@ -14,3 +14,7 @@
     -fx-border-color:black;
     -fx-background-color: #8B7355;
 }
+
+.label{
+    -fx-font-weight: bold;
+}
