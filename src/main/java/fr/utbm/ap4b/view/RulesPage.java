@@ -141,7 +141,7 @@ public class RulesPage {
         Label contentLabel = new Label(content);
         contentLabel.setFont(Font.font("System", 14));
         contentLabel.setWrapText(true);
-        // Alignement gauche souvent plus lisible pour les listes que JUSTIFY
+        // Alignement gauche (plus lisible que justifié)
         contentLabel.setTextAlignment(TextAlignment.LEFT);
         contentLabel.setStyle("-fx-text-fill: #34495e;");
 

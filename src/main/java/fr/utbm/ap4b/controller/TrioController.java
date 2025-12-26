@@ -4,28 +4,37 @@ import fr.utbm.ap4b.view.GameMainPage;
 import fr.utbm.ap4b.view.RulesPage;
 import fr.utbm.ap4b.view.TrioSoloPage;
 import fr.utbm.ap4b.view.TrioTeamPage;
+import fr.utbm.ap4b.view.ModeSelectionPage;
 import javafx.stage.Stage;
-import javafx.scene.Scene;
 
 public class TrioController {
 
-    private Scene gameScene;
+    private final ModeSelectionPage selectionView;
     private final GameMainPage gameView;
     private final Stage primaryStage;
 
     public TrioController(Stage primaryStage) {
         this.primaryStage = primaryStage;
-        this.gameView = new GameMainPage(9);
+        this.gameView = new GameMainPage(6);
+        this.selectionView = new ModeSelectionPage();
         setupEventHandlers();
     }
 
     private void setupEventHandlers() {
-        gameView.getRulesButton().setOnAction(e -> openRulesPage());
+        selectionView.getRulesButton().setOnAction(e -> openRulesPageFromSelection());
+        selectionView.getNextButton().setOnAction(e -> openGamePage());
+    }
+
+    private void openGamePage(){
+        primaryStage.getScene().setRoot(gameView.getRoot());
+        primaryStage.setTitle("Jeu du Trio");
+
         gameView.getDrawPileButton().setOnAction(e -> openDrawPilePage());
+        gameView.getRulesButton().setOnAction(e -> openRulesPageFromGame());
         gameView.getTrioButton().setOnAction(e -> openTrioSoloPage());
     }
 
-    private void openRulesPage() {
+    private void openRulesPageFromSelection() {
         try{
             //Créer la vue des règles
             RulesPage rulesView = new RulesPage();
@@ -34,14 +43,33 @@ public class TrioController {
             primaryStage.getScene().setRoot(rulesView.getRoot());
             primaryStage.setTitle("Règles du jeu du Trio");
 
-            // Connecter le bouton Retour
+            // Connecte le bouton Retour
+            rulesView.getEndBtn().setOnAction(e -> {
+                // Retourner à la page principale
+                primaryStage.getScene().setRoot(selectionView.getRoot());
+            });
+        }
+        catch(Exception e){
+            e.printStackTrace(); //Affiche erreurs dans la console
+        }
+    }
+
+    private void openRulesPageFromGame(){
+        try{
+            RulesPage rulesView = new RulesPage();
+
+            //Créer une scene avec cette vue
+            primaryStage.getScene().setRoot(rulesView.getRoot());
+            primaryStage.setTitle("Règles du jeu du Trio");
+
+            // Connecte le bouton Retour
             rulesView.getEndBtn().setOnAction(e -> {
                 // Retourner à la page principale
                 primaryStage.getScene().setRoot(gameView.getRoot());
             });
         }
         catch(Exception e){
-            e.printStackTrace(); //Affiche erreurs dans la console
+            e.printStackTrace();
         }
     }
 
@@ -54,9 +82,9 @@ public class TrioController {
             primaryStage.getScene().setRoot(drawPileView.getRoot());
             primaryStage.setTitle("Pioche du Trio");
 
-            // Connecter le bouton Retour
+            // Connecte le bouton Retour
             drawPileView.getEndBtn().setOnAction(e -> {
-                // Retourner à la page principale
+                // Retourne à la page principale
                 primaryStage.getScene().setRoot(gameView.getRoot());
             });
         }
@@ -74,9 +102,9 @@ public class TrioController {
             primaryStage.getScene().setRoot(trioView.getRoot());
             primaryStage.setTitle("Trios obtenus");
 
-            // Connecter le bouton Retour
+            // Connecte le bouton Retour
             trioView.getEndBtn().setOnAction(e -> {
-                // Retourner à la page principale
+                // Retourne à la page principale
                 primaryStage.getScene().setRoot(gameView.getRoot());
             });
         }
@@ -87,16 +115,16 @@ public class TrioController {
 
     private void openTrioTeamPage() {
         try{
-            //Créer la vue des trios en equipe
+            //Créer la vue des trios en équipe
             TrioTeamPage trioView = new TrioTeamPage(3);
 
             //Créer une scene avec cette vue
             primaryStage.getScene().setRoot(trioView.getRoot());
             primaryStage.setTitle("Trios obtenus");
 
-            // Connecter le bouton Retour
+            // Connecte le bouton Retour
             trioView.getEndBtn().setOnAction(e -> {
-                // Retourner à la page principale
+                // Retourne à la page principale
                 primaryStage.getScene().setRoot(gameView.getRoot());
             });
         }
@@ -105,8 +133,8 @@ public class TrioController {
         }
     }
 
-    public GameMainPage getView() {
-        return gameView;
+    public ModeSelectionPage getView() {
+        return selectionView;
     }
 
 }

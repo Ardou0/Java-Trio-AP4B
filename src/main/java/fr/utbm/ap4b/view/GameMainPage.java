@@ -7,6 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.text.TextAlignment;
 
 import java.io.InputStream;
 
@@ -38,6 +39,7 @@ public class GameMainPage {
         root.setTop(createRulesButton());
         root.setBottom(createBoardContainer());
         root.setLeft(createOpponentArea(nombreJoueurs));
+        root.setRight(createPersonalArea());
     }
 
     /**
@@ -46,7 +48,7 @@ public class GameMainPage {
     private BorderPane createBoardContainer(){
         BorderPane bottomContainer = new BorderPane();
 
-        drawPileButton = new Button("Draw Pile");
+        drawPileButton = new Button("Pioche");
         drawPileButton.setAlignment(Pos.CENTER);
 
         drawPileButton.setOnMouseEntered(e -> drawPileButton.setStyle("-fx-background-color: #5C4C38;"));
@@ -74,6 +76,16 @@ public class GameMainPage {
             StackPane slot = createSlot();
             bottomBoardContainer.getChildren().add(slot);
         }
+
+        // Lier la hauteur des boutons à celle du HBox
+        drawPileButton.prefHeightProperty().bind(bottomBoardContainer.heightProperty());
+        trioButton.prefHeightProperty().bind(bottomBoardContainer.heightProperty());
+
+        drawPileButton.setPrefWidth(100);
+        trioButton.setPrefWidth(100);
+
+        BorderPane.setMargin(drawPileButton, new Insets(0, 10, 0, 0)); // Marge à droite
+        BorderPane.setMargin(trioButton, new Insets(0, 0, 0, 10)); // Marge à gauche
 
         BorderPane.setAlignment(drawPileButton, Pos.CENTER);
         bottomContainer.setLeft(drawPileButton);
@@ -181,7 +193,7 @@ public class GameMainPage {
         help.setPadding(new Insets(10));
 
         // Bouton de contrôle
-        rulesButton = new Button("Rules");
+        rulesButton = new Button("Règles");
 
         rulesButton.setOnMouseEntered(e -> rulesButton.setStyle("-fx-background-color: #5C4C38;"));
         rulesButton.setOnMouseExited(e -> rulesButton.setStyle("-fx-background-color: #8B7355;"));
@@ -192,18 +204,27 @@ public class GameMainPage {
     }
 
     private VBox createOpponentArea(int nombreJoueurs) {
-        VBox vBox = new VBox(10);
-        vBox.setAlignment(Pos.TOP_CENTER);
+        VBox vBox = new VBox(5);
+        vBox.setAlignment(Pos.CENTER);
         vBox.setPadding(new Insets(5));
-//        vBox.setStyle("-fx-background-color: #F5E6D3; -fx-background-radius: 10; -fx-border-color: #8B7355; -fx-border-width: 2; -fx-border-radius: 10;");
+
+        //Explication des boutons
+        Label explanation = new Label("Choisis un joueur à qui voir une carte");
+        explanation.setPrefWidth(130);
+        explanation.setStyle("-fx-font-size: 18px; ");
+        explanation.setWrapText(true);
+        explanation.setAlignment(Pos.CENTER);
+        explanation.setTextAlignment(TextAlignment.CENTER);
+        explanation.setMaxWidth(Double.MAX_VALUE);
+        vBox.getChildren().add(explanation);
 
         // Calcul du nombre d'adversaires
         int nombreAdversaires = nombreJoueurs - 1;
 
         for (int i = 0; i < nombreAdversaires; i++) {
             // Création d'un conteneur pour un adversaire
-            BorderPane opponentPane = createOpponentPanel(i + 1, nombreAdversaires);
-            vBox.getChildren().add(opponentPane);
+            Button opponentButton = createOpponentButton(i + 1);
+            vBox.getChildren().add(opponentButton);
         }
 
         return vBox;
@@ -212,30 +233,67 @@ public class GameMainPage {
     /**
      * Crée un panneau pour un adversaire spécifique
      */
-    private BorderPane createOpponentPanel(int adversaireNumero, int totalAdversaires) {
-        BorderPane opponentPane = new BorderPane();
-        opponentPane.setPrefSize(120, 50);
-        opponentPane.setMinSize(120, 50);
-        opponentPane.setStyle(
-                "-fx-background-color: #8B7355;" +
-                "-fx-background-radius: 10;" +
-                "-fx-border-color: black;" +
-                "-fx-border-width: 2;" +
-                "-fx-border-radius: 10;" +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);"
-        );
-        opponentPane.setPadding(new Insets(5));
+    private Button createOpponentButton(int adversaireNumero) {
 
         // Nom du joueur
-        Label playerName = new Label("Joueur " + adversaireNumero);
+        Button playerName = new Button("Joueur " + adversaireNumero);
         playerName.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
+        playerName.setOnMouseEntered(e -> playerName.setStyle("-fx-background-color: #5C4C38;"));
+        playerName.setOnMouseExited(e -> playerName.setStyle("-fx-background-color: #8B7355;"));
         playerName.setAlignment(Pos.CENTER);
         playerName.setMaxWidth(Double.MAX_VALUE);
         playerName.setWrapText(true); // Permet au texte de passer à la ligne si trop long
-        opponentPane.setCenter(playerName);
-        BorderPane.setAlignment(playerName, Pos.CENTER);
 
-        return opponentPane;
+        return playerName;
+    }
+
+    private VBox createPersonalArea(){
+        VBox vBox = new VBox(10);
+        vBox.setAlignment(Pos.CENTER_RIGHT);
+        vBox.setPadding(new Insets(5));
+
+        int maxWidht = 145;
+
+        //Explication des boutons
+        Label explanation = new Label("Tes propres actions");
+        explanation.setPrefWidth(maxWidht);
+        explanation.setStyle("-fx-font-size: 18px; ");
+        explanation.setWrapText(true);
+        explanation.setAlignment(Pos.CENTER);
+        explanation.setTextAlignment(TextAlignment.CENTER);
+        explanation.setMaxWidth(Double.MAX_VALUE);
+        vBox.getChildren().add(explanation);
+
+        //The player looks at all his cards
+        Button printButton = new Button("Voir mes cartes");
+        printButton.setPrefWidth(maxWidht);
+        printButton.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
+        printButton.setOnMouseEntered(e -> printButton.setStyle("-fx-background-color: #5C4C38;"));
+        printButton.setOnMouseExited(e -> printButton.setStyle("-fx-background-color: #8B7355;"));
+        printButton.setAlignment(Pos.CENTER);
+        printButton.setWrapText(true);
+
+        //The player shows his smallest card
+        Button smallestCard = new Button("Montrer sa plus petite carte");
+        smallestCard.setPrefWidth(maxWidht);
+        smallestCard.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
+        smallestCard.setOnMouseEntered(e -> smallestCard.setStyle("-fx-background-color: #5C4C38;"));
+        smallestCard.setOnMouseExited(e -> smallestCard.setStyle("-fx-background-color: #8B7355;"));
+        smallestCard.setAlignment(Pos.CENTER);
+        smallestCard.setWrapText(true);
+
+        //The player shows his largest card
+        Button largestCard = new Button("Montrer sa plus grande carte");
+        largestCard.setPrefWidth(maxWidht);
+        largestCard.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
+        largestCard.setOnMouseEntered(e -> largestCard.setStyle("-fx-background-color: #5C4C38;"));
+        largestCard.setOnMouseExited(e -> largestCard.setStyle("-fx-background-color: #8B7355;"));
+        largestCard.setAlignment(Pos.CENTER);
+        largestCard.setWrapText(true);
+
+        vBox.getChildren().addAll(printButton, smallestCard, largestCard);
+
+        return vBox;
     }
 
     public BorderPane getRoot() {

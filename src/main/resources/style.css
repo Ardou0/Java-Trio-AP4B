@@ -18,3 +18,55 @@
 .label{
     -fx-font-weight: bold;
 }
+
+.combo-box{
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 10px 20px;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color:black;
+    -fx-background-color: #8B7355;
+}
+
+/* Texte blanc pour l'élément sélectionné */
+.combo-box .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: #8B7355;
+}
+
+/* Pour la liste déroulante */
+.combo-box-popup .list-view {
+    -fx-background-color: #8B7355;
+    -fx-background-radius: 10px;
+}
+
+/* Pour chaque élément de la liste déroulante */
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: #8B7355; /* Fond marron */
+}
+
+/* Élément survolé */
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-text-fill: white;
+    -fx-background-color: #6B5A45;
+}
+
+/* Élément sélectionné dans la liste */
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-text-fill: white;
+    -fx-background-color: #6B5A45;
+}
+
+/* Pour supprimer les bordures autour de la liste déroulante */
+.combo-box-popup {
+    -fx-background-color: transparent;
+}
+
+/* Flèche blanche */
+.combo-box .arrow-button .arrow {
+    -fx-background-color: white;
+}
