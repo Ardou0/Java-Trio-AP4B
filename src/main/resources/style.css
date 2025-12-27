@@ -52,13 +52,13 @@
 /* Élément survolé */
 .combo-box-popup .list-view .list-cell:hover {
     -fx-text-fill: white;
-    -fx-background-color: #6B5A45;
+    -fx-background-color: #E2CAA2;
 }
 
 /* Élément sélectionné dans la liste */
 .combo-box-popup .list-view .list-cell:selected {
     -fx-text-fill: white;
-    -fx-background-color: #6B5A45;
+    -fx-background-color: #E2CAA2;
 }
 
 /* Pour supprimer les bordures autour de la liste déroulante */
@@ -69,4 +69,29 @@
 /* Flèche blanche */
 .combo-box .arrow-button .arrow {
     -fx-background-color: white;
+}
+
+.text-area {
+    /* Style par défaut */
+    -fx-border-color: #cccccc;
+    -fx-border-radius: 5px;
+    -fx-border-width: 1px;
+    -fx-background-color: white;
+    -fx-background-radius: 5px;
+
+    /* Enlever le contour bleu par défaut */
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* TextArea focus/cliqué */
+.text-area:focused {
+    -fx-border-color: #8B7355;
+    -fx-border-width: 2px;
+    -fx-background-color: #E2CAA2;
+}
+
+/* Style au survol */
+.text-area:hover {
+    -fx-border-color: #999999;
 }

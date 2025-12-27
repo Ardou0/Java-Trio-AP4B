@@ -49,6 +49,7 @@ public class DrawPilePage {
         explanationLabel.setStyle("-fx-font-size: 25px;");
         explanationLabel.setAlignment(Pos.CENTER);
         explanationLabel.setMaxWidth(Double.MAX_VALUE);
+
         vBox.getChildren().addAll(drawPileLabel, explanationLabel);
         drawPilePane.add(vBox, 0, 0, 5, 1);
 

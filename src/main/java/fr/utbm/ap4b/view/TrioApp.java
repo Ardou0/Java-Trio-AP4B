@@ -16,8 +16,6 @@ public class TrioApp extends Application {
 
         //Recupere la vue du controlleur
         BorderPane gameView = controller.getView().getRoot();
-        //ModeSelectionPage modeSelection = new ModeSelectionPage();
-        //BorderPane gameView = modeSelection.getRoot();
 
         //Initialisation de la fenêtre
         Scene scene = new Scene(gameView, 1200,800);

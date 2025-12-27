@@ -5,6 +5,7 @@ import fr.utbm.ap4b.view.RulesPage;
 import fr.utbm.ap4b.view.TrioSoloPage;
 import fr.utbm.ap4b.view.TrioTeamPage;
 import fr.utbm.ap4b.view.ModeSelectionPage;
+import fr.utbm.ap4b.view.PlayerPage;
 import javafx.stage.Stage;
 
 public class TrioController {
@@ -22,7 +23,26 @@ public class TrioController {
 
     private void setupEventHandlers() {
         selectionView.getRulesButton().setOnAction(e -> openRulesPageFromSelection());
-        selectionView.getNextButton().setOnAction(e -> openGamePage());
+        selectionView.getNextButton().setOnAction(e -> openPlayerPage());
+    }
+
+    private void openPlayerPage(){
+        try{
+            PlayerPage playerView = new PlayerPage(6);
+            primaryStage.getScene().setRoot(playerView.getRoot());
+            primaryStage.setTitle("Trio - Nom des joueurs");
+
+            playerView.getPreviousButton().setOnAction(e -> {
+                primaryStage.getScene().setRoot(selectionView.getRoot());
+            });
+
+            playerView.getNextButton().setOnAction(e -> {
+                openGamePage();
+            });
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     private void openGamePage(){
