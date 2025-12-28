@@ -6,24 +6,32 @@ import fr.utbm.ap4b.view.TrioSoloPage;
 import fr.utbm.ap4b.view.TrioTeamPage;
 import fr.utbm.ap4b.view.ModeSelectionPage;
 import fr.utbm.ap4b.view.PlayerPage;
+import javafx.animation.FadeTransition;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class TrioController {
 
     private final ModeSelectionPage selectionView;
     private final GameMainPage gameView;
     private final Stage primaryStage;
+    private String teamMode;
 
     public TrioController(Stage primaryStage) {
         this.primaryStage = primaryStage;
         this.gameView = new GameMainPage(6);
         this.selectionView = new ModeSelectionPage();
+        this.teamMode = "Individuel";
         setupEventHandlers();
     }
 
     private void setupEventHandlers() {
         selectionView.getRulesButton().setOnAction(e -> openRulesPageFromSelection());
         selectionView.getNextButton().setOnAction(e -> openPlayerPage());
+        //Changement de la ComboBox de la team
+        selectionView.getTeamComboBox().valueProperty().addListener((observable, oldValue, newValue) -> {
+            this.teamMode = newValue;
+        });
     }
 
     private void openPlayerPage(){
@@ -39,6 +47,21 @@ public class TrioController {
             playerView.getNextButton().setOnAction(e -> {
                 openGamePage();
             });
+
+            playerView.getExampleCheck().setOnAction(event -> {
+                boolean isSelected = playerView.getExampleCheck().isSelected();
+                playerView.getExampleLabel().setVisible(isSelected);
+
+                // Animation de transition
+                playerView.getExampleLabel().setOpacity(isSelected ? 0 : 1);
+
+                if (isSelected) {
+                    FadeTransition fadeIn = new FadeTransition(Duration.millis(300), playerView.getExampleLabel());
+                    fadeIn.setFromValue(0);
+                    fadeIn.setToValue(1);
+                    fadeIn.play();
+                }
+            });
         }
         catch(Exception e){
             e.printStackTrace();
@@ -51,7 +74,15 @@ public class TrioController {
 
         gameView.getDrawPileButton().setOnAction(e -> openDrawPilePage());
         gameView.getRulesButton().setOnAction(e -> openRulesPageFromGame());
-        gameView.getTrioButton().setOnAction(e -> openTrioSoloPage());
+        gameView.getTrioButton().setOnAction(e -> openTrioPage());
+    }
+
+    private void openTrioPage() {
+        if ("Equipe".equals(teamMode)) {
+            openTrioTeamPage();
+        } else {
+            openTrioSoloPage();
+        }
     }
 
     private void openRulesPageFromSelection() {
@@ -120,7 +151,7 @@ public class TrioController {
 
             //Créer une scene avec cette vue
             primaryStage.getScene().setRoot(trioView.getRoot());
-            primaryStage.setTitle("Trios obtenus");
+            primaryStage.setTitle("Trios obtenus (Mode Individuel)");
 
             // Connecte le bouton Retour
             trioView.getEndBtn().setOnAction(e -> {
@@ -136,11 +167,11 @@ public class TrioController {
     private void openTrioTeamPage() {
         try{
             //Créer la vue des trios en équipe
-            TrioTeamPage trioView = new TrioTeamPage(3);
+            TrioTeamPage trioView = new TrioTeamPage(2);
 
             //Créer une scene avec cette vue
             primaryStage.getScene().setRoot(trioView.getRoot());
-            primaryStage.setTitle("Trios obtenus");
+            primaryStage.setTitle("Trios obtenus (Mode Équipe)");
 
             // Connecte le bouton Retour
             trioView.getEndBtn().setOnAction(e -> {

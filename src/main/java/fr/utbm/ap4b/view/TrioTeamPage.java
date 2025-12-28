@@ -48,7 +48,7 @@ public class TrioTeamPage {
     }
 
     /**
-     * Affiche le nom des joueurs/équipes et leurs trios
+     * Affiche le nom des équipes et leurs trios
      */
     private GridPane createPrintArea(int nbEquipe) {
         GridPane grid = new GridPane();
@@ -67,7 +67,7 @@ public class TrioTeamPage {
         int colonnesParLigne = 3; // 3 équipes par ligne
 
         for (int equipe = 0; equipe < nbEquipe; equipe++) {
-            HBox box = createPlayerBox(equipe + 1);
+            HBox box = createTeamBox(equipe + 1);
 
             int colonne = equipe % colonnesParLigne;
             int ligne = (equipe / colonnesParLigne) + 1;
@@ -82,7 +82,7 @@ public class TrioTeamPage {
         return grid;
     }
 
-    private HBox createPlayerBox(int numeroJoueur) {
+    private HBox createTeamBox(int numeroEquipe) {
         HBox box = new HBox(15);
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(20, 10, 30, 10));
@@ -98,8 +98,7 @@ public class TrioTeamPage {
             box.getChildren().add(slot);
         }
 
-        // Optionnel : Ajouter un label pour identifier le joueur
-        Label label = new Label("Joueur " + numeroJoueur);
+        Label label = new Label("Équipe " + numeroEquipe);
         label.setStyle("-fx-font-size: 14px;");
         box.getChildren().add(0, label); // Ajouter au début
 

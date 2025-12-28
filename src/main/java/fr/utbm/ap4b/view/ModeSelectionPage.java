@@ -12,6 +12,9 @@ public class ModeSelectionPage {
     private BorderPane root;
     private Button rulesButton;
     private Button nextButton;
+    private ComboBox<String> modeComboBox;
+    private ComboBox<String> teamComboBox;
+    private ComboBox<String> playerComboBox;
 
     public ModeSelectionPage() {
         showScreen();
@@ -49,7 +52,7 @@ public class ModeSelectionPage {
         modeLabel.setStyle("-fx-font-size: 16px;");
 
         // Création de la ComboBox
-        ComboBox<String> modeComboBox = new ComboBox<>();
+        modeComboBox = new ComboBox<>();
         // Ajout des options
         modeComboBox.getItems().addAll("Normal", "Piquant");
         // Valeur par défaut
@@ -64,7 +67,7 @@ public class ModeSelectionPage {
         teamLabel.setStyle("-fx-font-size: 16px;");
 
         // Création de la ComboBox
-        ComboBox<String> teamComboBox = new ComboBox<>();
+        teamComboBox = new ComboBox<>();
         teamComboBox.getItems().addAll("Individuel", "Equipe");
         teamComboBox.setValue("Individuel");
         teamContainer.getChildren().addAll(teamLabel, teamComboBox);
@@ -75,7 +78,7 @@ public class ModeSelectionPage {
         playerLabel.setAlignment(Pos.CENTER);
         playerLabel.setStyle("-fx-font-size: 16px;");
 
-        ComboBox<String> playerComboBox = new ComboBox<>();
+        playerComboBox = new ComboBox<>();
         playerComboBox.getItems().addAll("3", "4", "5", "6");
         playerComboBox.setValue("6");
         playerContainer.getChildren().addAll(playerLabel, playerComboBox);
@@ -131,6 +134,12 @@ public class ModeSelectionPage {
     public Button getRulesButton() {return rulesButton;}
 
     public Button getNextButton() {return nextButton;}
+
+    public ComboBox<String> getModeComboBox() {return modeComboBox;}
+
+    public ComboBox<String> getTeamComboBox() {return teamComboBox;}
+
+    public ComboBox<String> getPlayerComboBox() {return playerComboBox;}
 
     public BorderPane getRoot() {return root;}
 }

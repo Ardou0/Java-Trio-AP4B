@@ -48,7 +48,7 @@ public class TrioSoloPage {
     }
 
     /**
-     * Affiche le nom des joueurs/équipes et leurs trios
+     * Affiche le nom des joueurs et leurs trios
      */
     private GridPane createPrintArea(int nbJoueurs) {
         GridPane grid = new GridPane();
@@ -98,7 +98,6 @@ public class TrioSoloPage {
             box.getChildren().add(slot);
         }
 
-        // Optionnel : Ajouter un label pour identifier le joueur
         Label label = new Label("Joueur " + numeroJoueur);
         label.setStyle("-fx-font-size: 14px;");
         box.getChildren().add(0, label); // Ajouter au début
