@@ -5,7 +5,6 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-
 import java.util.Objects;
 
 public class TrioApp extends Application {
@@ -22,9 +21,9 @@ public class TrioApp extends Application {
 
         scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/style.css")).toExternalForm());
 
-        primaryStage.setTitle("Jeu du Trio"); //Nom de la page
-        primaryStage.setScene(scene); //Creation de la scene
-        primaryStage.setMinWidth(600); //Tille minimum
+        primaryStage.setTitle("Jeu du Trio");
+        primaryStage.setScene(scene);
+        primaryStage.setMinWidth(600);
 
         primaryStage.show();
     }

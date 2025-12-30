@@ -1,5 +1,7 @@
 package fr.utbm.ap4b.view;
 
+import fr.utbm.ap4b.model.Card;
+import fr.utbm.ap4b.model.CardLocation;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -10,6 +12,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.text.TextAlignment;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Vue principale du jeu Trio avec JavaFX
@@ -24,10 +30,26 @@ public class GameMainPage {
     private HBox bottomBoardContainer; //Board montrant cartes retournées
     private Button trioButton;
     private Button drawPileButton;
+    private int actualPlayer;
+    private Button printButton;
+    private Button smallestCard;
+    private Button largestCard;
+    private Label cardLabel;
+    private Map<Integer, Button> upArrowButtons = new HashMap<>();
+    private Map<Integer, Button> downArrowButtons = new HashMap<>();
+
+    // Maps pour stocker les références aux boutons
+    private Map<Integer, Button> opponentButtons = new HashMap<>();
+    private Map<Integer, VBox> arrowContainers = new HashMap<>(); // Conteneur des flèches
+    private Map<Integer, HBox> opponentContainers = new HashMap<>();
+
+    private List<StackPane> cardSlots = new ArrayList<>(); // Stocke les emplacements des cartes
+    private Map<Integer, ImageView> cardImages = new HashMap<>(); // Stocke les images des cartes
 
 
-    public GameMainPage(int nombreJoueurs){
+    public GameMainPage(int nombreJoueurs, int actualPlayer) {
         this.nombreJoueurs = nombreJoueurs;
+        this.actualPlayer = actualPlayer;
         showScreen();
     }
 
@@ -38,7 +60,7 @@ public class GameMainPage {
         root.setCenter(createHandArea());
         root.setTop(createRulesButton());
         root.setBottom(createBoardContainer());
-        root.setLeft(createOpponentArea(nombreJoueurs));
+        root.setLeft(createOpponentArea(nombreJoueurs, actualPlayer));
         root.setRight(createPersonalArea());
     }
 
@@ -71,10 +93,12 @@ public class GameMainPage {
                 "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);" // Ombre
         );
 
-        // Création de 3 cases
+        // Création de 3 cases et les stocks dans la liste
+        cardSlots.clear();
         for (int i = 0; i < 3; i++) {
             StackPane slot = createSlot();
             bottomBoardContainer.getChildren().add(slot);
+            cardSlots.add(slot);
         }
 
         // Lier la hauteur des boutons à celle du HBox
@@ -124,19 +148,72 @@ public class GameMainPage {
         return slot;
     }
 
-    //Retourne la box entière
-    public HBox getBottomBoardContainer() {
-        return bottomBoardContainer;
+    /**
+     * Affiche une carte dans un emplacement spécifique du board
+     * @param slotIndex Index de l'emplacement (0, 1 ou 2)
+     * @param card Carte à afficher (objet Card du modèle)
+     */
+    public void displayCardInBoard(int slotIndex, Card card) {
+        if(slotIndex < 0 || slotIndex >= cardSlots.size()){
+            System.err.println("Index d'emplacement invalide (entre 1 et 3) : " + slotIndex);
+            return;
+        }
+
+        if (card == null) {
+            System.err.println("Carte null pour l'emplacement: " + slotIndex);
+            clearSlot(slotIndex);
+            return;
+        }
+
+        StackPane slot = cardSlots.get(slotIndex);
+        slot.getChildren().clear(); // Nettoie l'emplacement
+
+        try{
+            //utilie le chemin depuis l'objet Card
+            String imagePath = card.getImagePath();
+            InputStream is = getClass().getResourceAsStream(imagePath);
+
+            if(is != null){
+                Image cardImage = new Image(is);
+                ImageView cardView = new ImageView(cardImage);
+
+                cardView.setFitWidth(90);
+                cardView.setFitHeight(135);
+                cardView.setPreserveRatio(true);
+
+                cardImages.put(slotIndex, cardView);
+                slot.getChildren().add(cardView);
+            } else{
+                // Affiche la valeur en texte si l'image n'est pas trouvée
+                System.err.println("Image non trouvée " +  imagePath);
+                Label valueLabel = new Label(String.valueOf(card.getValue()));
+                slot.getChildren().add(valueLabel);
+            }
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            // En cas d'erreur, affiche la valeur en texte
+            Label valueLabel = new Label(String.valueOf(card.getValue()));
+            valueLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5C4C38;");
+            slot.getChildren().add(valueLabel);
+        }
     }
 
     /**
-     * Permet d'acceder à l'index d'une case pour lui ajouter une carte
+     * Met à jour l'affichage du board avec les cartes révélées
+     * @param cardLocations Liste des CardLocation du modèle
      */
-    public StackPane getSlotAt(int index) {
-        if (index >= 0 && index < bottomBoardContainer.getChildren().size()) {
-            return (StackPane) bottomBoardContainer.getChildren().get(index);
+    public void updateBoard(List<CardLocation> cardLocations) {
+        //Vide le board
+        clearBoard();
+
+        //Affiche les cartes
+        for(int i = 0; i < cardLocations.size() && i < cardSlots.size(); i++){
+            CardLocation cardLocation = cardLocations.get(i);
+            Card card = cardLocation.getCard();
+
+            displayCardInBoard(i, card);
         }
-        return null;
     }
 
     /**
@@ -151,7 +228,7 @@ public class GameMainPage {
         handGrid.setPadding(new Insets(20));
 
         //Label d'affiche des cartes
-        Label cardLabel = new Label("Tes cartes");
+        cardLabel = new Label("Tes cartes" );
         cardLabel.setStyle("-fx-font-size: 40px; ");
         cardLabel.setAlignment(Pos.CENTER);
         cardLabel.setMaxWidth(Double.MAX_VALUE);
@@ -194,7 +271,6 @@ public class GameMainPage {
 
         // Bouton de contrôle
         rulesButton = new Button("Règles");
-
         rulesButton.setOnMouseEntered(e -> rulesButton.setStyle("-fx-background-color: #5C4C38;"));
         rulesButton.setOnMouseExited(e -> rulesButton.setStyle("-fx-background-color: #8B7355;"));
 
@@ -203,14 +279,14 @@ public class GameMainPage {
         return help;
     }
 
-    private VBox createOpponentArea(int nombreJoueurs) {
+    private VBox createOpponentArea(int nombreJoueurs, int actualPlayer) {
         VBox vBox = new VBox(5);
         vBox.setAlignment(Pos.CENTER);
         vBox.setPadding(new Insets(5));
 
         //Explication des boutons
         Label explanation = new Label("Choisis un joueur à qui voir une carte");
-        explanation.setPrefWidth(130);
+        explanation.setPrefWidth(200);
         explanation.setStyle("-fx-font-size: 18px; ");
         explanation.setWrapText(true);
         explanation.setAlignment(Pos.CENTER);
@@ -218,34 +294,59 @@ public class GameMainPage {
         explanation.setMaxWidth(Double.MAX_VALUE);
         vBox.getChildren().add(explanation);
 
-        // Calcul du nombre d'adversaires
-        int nombreAdversaires = nombreJoueurs - 1;
-
-        for (int i = 0; i < nombreAdversaires; i++) {
-            // Création d'un conteneur pour un adversaire
-            Button opponentButton = createOpponentButton(i + 1);
-            vBox.getChildren().add(opponentButton);
+        for (int i = 0; i < nombreJoueurs; i++) {
+            if ((i + 1) != actualPlayer) {
+                // Création d'un conteneur pour un adversaire
+                HBox opponentContainer = createOpponentContainer(i + 1);
+                vBox.getChildren().add(opponentContainer);
+                opponentContainers.put(i + 1, opponentContainer);
+            }
         }
 
         return vBox;
     }
 
     /**
-     * Crée un panneau pour un adversaire spécifique
+     * Crée un conteneur avec le bouton de l'adversaire et les boutons de flèches
      */
-    private Button createOpponentButton(int adversaireNumero) {
+    private HBox createOpponentContainer(int adversaireNumero) {
+        HBox hBox = new HBox(5);
+        hBox.setAlignment(Pos.CENTER);
 
-        // Nom du joueur
         Button playerName = new Button("Joueur " + adversaireNumero);
-        playerName.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
         playerName.setOnMouseEntered(e -> playerName.setStyle("-fx-background-color: #5C4C38;"));
         playerName.setOnMouseExited(e -> playerName.setStyle("-fx-background-color: #8B7355;"));
         playerName.setAlignment(Pos.CENTER);
-        playerName.setMaxWidth(Double.MAX_VALUE);
-        playerName.setWrapText(true); // Permet au texte de passer à la ligne si trop long
+        playerName.setMaxWidth(120);
+        playerName.setMinWidth(120);
+        opponentButtons.put(adversaireNumero, playerName);
 
-        return playerName;
+        VBox arrowButtons = new VBox(2);
+        arrowButtons.setAlignment(Pos.CENTER);
+        arrowButtons.setVisible(false);
+
+        // Bouton flèche vers le haut
+        Button upButton = new Button("▲");
+        upButton.setOnMouseEntered(e -> upButton.setStyle("-fx-background-color: #5C4C38;"));
+        upButton.setOnMouseExited(e -> upButton.setStyle("-fx-background-color: #8B7355;"));
+        upButton.setMinSize(65,40);
+        upArrowButtons.put(adversaireNumero, upButton);
+
+        // Bouton flèche vers le bas
+        Button downButton = new Button("▼");
+        downButton.setOnMouseEntered(e -> downButton.setStyle("-fx-background-color: #5C4C38;"));
+        downButton.setOnMouseExited(e -> downButton.setStyle("-fx-background-color: #8B7355;"));
+        downButton.setMinSize(65,40);
+        downArrowButtons.put(adversaireNumero, downButton);
+
+        arrowButtons.getChildren().addAll(upButton, downButton);
+        arrowContainers.put(adversaireNumero, arrowButtons);
+
+        hBox.getChildren().addAll(playerName, arrowButtons);
+
+        return hBox;
     }
+
 
     private VBox createPersonalArea(){
         VBox vBox = new VBox(10);
@@ -265,7 +366,7 @@ public class GameMainPage {
         vBox.getChildren().add(explanation);
 
         //The player looks at all his cards
-        Button printButton = new Button("Voir mes cartes");
+        printButton = new Button("Voir mes cartes");
         printButton.setPrefWidth(maxWidht);
         printButton.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
         printButton.setOnMouseEntered(e -> printButton.setStyle("-fx-background-color: #5C4C38;"));
@@ -274,7 +375,7 @@ public class GameMainPage {
         printButton.setWrapText(true);
 
         //The player shows his smallest card
-        Button smallestCard = new Button("Montrer sa plus petite carte");
+        smallestCard = new Button("Montrer sa plus petite carte");
         smallestCard.setPrefWidth(maxWidht);
         smallestCard.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
         smallestCard.setOnMouseEntered(e -> smallestCard.setStyle("-fx-background-color: #5C4C38;"));
@@ -283,7 +384,7 @@ public class GameMainPage {
         smallestCard.setWrapText(true);
 
         //The player shows his largest card
-        Button largestCard = new Button("Montrer sa plus grande carte");
+        largestCard = new Button("Montrer sa plus grande carte");
         largestCard.setPrefWidth(maxWidht);
         largestCard.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
         largestCard.setOnMouseEntered(e -> largestCard.setStyle("-fx-background-color: #5C4C38;"));
@@ -296,9 +397,67 @@ public class GameMainPage {
         return vBox;
     }
 
-    public BorderPane getRoot() {
-        return root;
+    // Affiche les flèches d'un joueur spécifique
+    public void showArrowsForPlayer(int playerId) {
+        // Cache toutes les flèches d'abord
+        hideAllArrows();
+
+        // Affiche les flèches du joueur sélectionné
+        VBox arrows = arrowContainers.get(playerId);
+        if (arrows != null) {
+            arrows.setVisible(true);
+        } else {
+            System.out.println("DEBUG: No arrows found for playerId: " + playerId);
+            System.out.println("DEBUG: arrowContainers keys: " + arrowContainers.keySet());
+        }
     }
+
+    // Cache toutes les flèches
+    public void hideAllArrows() {
+        for (VBox arrows : arrowContainers.values()) {
+            arrows.setVisible(false);
+        }
+    }
+
+    /**
+     * Vide tous les emplacements du board
+     */
+    public void clearBoard() {
+        for (int i = 0; i < cardSlots.size(); i++) {
+            clearSlot(i);
+        }
+    }
+
+    /**
+     * Vide un emplacement spécifique
+     */
+    public void clearSlot(int slotIndex) {
+        if (slotIndex >= 0 && slotIndex < cardSlots.size()) {
+            StackPane slot = cardSlots.get(slotIndex);
+            slot.getChildren().clear();
+
+            // Remettre le style par défaut
+            slot.setStyle(
+                    "-fx-border-color: #8B7355;" +
+                    "-fx-border-style: dashed;" +
+                    "-fx-border-width: 2;" +
+                    "-fx-border-radius: 8;" +
+                    "-fx-background-color: #F5E6D3;" +
+                    "-fx-background-radius: 8;" +
+                    "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"
+            );
+
+            // Retirer l'image de la map
+            cardImages.remove(slotIndex);
+        }
+    }
+
+    // Getter pour le bouton du joueur
+    public Button getOpponentButton(int playerId) {
+        return opponentButtons.get(playerId);
+    }
+
+    public BorderPane getRoot() {return root;}
 
     public Button getRulesButton(){ return rulesButton;}
 
@@ -311,4 +470,35 @@ public class GameMainPage {
      * Renvoie le bouton de la page des trios
      */
     public Button getTrioButton(){return  trioButton;}
+
+    /**
+     * Affiche les cartes du joueur
+     */
+    public Button getPrintButton(){return  printButton;}
+
+    /**
+     * Place dans le board la plus petite carte du joueur
+     */
+    public Button getSmallestButton(){return  smallestCard;}
+
+    /**
+     * Place dans le board la plus grande carte du joueur actif
+     */
+    public Button getlargestButton(){return  largestCard;}
+
+    /**
+     * Renvoie le label titre
+     */
+    public Label getTitleLabel(){return cardLabel;}
+
+    /**
+     * Place dans le board la plus grande carte du joueur en paramètre
+     */
+    public Button getUpArrowButton(int playerId){return upArrowButtons.get(playerId);}
+
+    /**
+     * Place dans le board la plus petite carte du joueur en paramètre
+     */
+    public Button getDownArrowButton(int playerId){return downArrowButtons.get(playerId);}
+
 }

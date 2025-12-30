@@ -80,9 +80,7 @@ public class Game {
         return players.get(playerTurn);
     }
 
-    public List<Actor> getPlayers() {
-        return players;
-    }
+    public List<Actor> getPlayers() {return players;}
 
     public DrawPile getDrawPile() {
         return drawPile;

@@ -11,6 +11,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PlayerPage {
     private final int nbPlayers;
     private BorderPane root;
@@ -18,6 +21,7 @@ public class PlayerPage {
     private Button nextButton;
     private CheckBox teamExampleCheckBox;
     private Label teamExampleLabel;
+    private List<TextField> playerNameFields = new ArrayList<>();
 
     public PlayerPage(int nbPlayers) {
         this.nbPlayers = nbPlayers;
@@ -58,6 +62,9 @@ public class PlayerPage {
             playerNameField.setEditable(true);
             playerNameField.setPrefWidth(150);
             playerNameField.setMaxWidth(150);
+
+            // Ajoute le TextField à la liste
+            playerNameFields.add(playerNameField);
 
             hBox.getChildren().addAll(playerName,  playerNameField);
 
@@ -136,6 +143,17 @@ public class PlayerPage {
     public CheckBox getExampleCheck() {return teamExampleCheckBox;}
 
     public Label getExampleLabel() {return teamExampleLabel;}
+
+    /**
+    * Renvoie le nom des joueurs de la liste des labels
+    */
+    public List<String> getPlayerNames() {
+        List<String> names = new ArrayList<>();
+        for (TextField field : playerNameFields) {
+            names.add(field.getText().trim());
+        }
+        return names;
+    }
 
     public BorderPane getRoot() {return root;}
 }
