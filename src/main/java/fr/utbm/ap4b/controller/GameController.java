@@ -4,7 +4,6 @@ import fr.utbm.ap4b.model.*;
 import fr.utbm.ap4b.view.*;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 
 import java.util.*;
@@ -17,7 +16,6 @@ public class GameController {
     
     // État du jeu
     private int turnCounter = 0;
-    private boolean isInSwapPhase = false;
     private Integer selectedPlayer = null;
 
     public GameController(Stage primaryStage, Game gameModel) {
@@ -28,76 +26,25 @@ public class GameController {
     public void startGame() {
         gameModel.startGame();
         turnCounter = 0;
-        isInSwapPhase = false;
 
         String modeMessage = gameModel.isTeamMode() ? "Mode Équipe" : "Mode Solo";
         
         if (gameModel.getCurrentPhase() == Game.GamePhase.INITIAL_SWAP) {
-            handleSwapPhase();
+            startSwapPhase();
         } else {
             openGamePage();
             gameView.showOverlayMessage("Début de la partie - " + modeMessage, 2000);
         }
     }
 
-    private void handleSwapPhase() {
-        // On récupère uniquement ceux qui n'ont PAS encore échangé
-        Set<Actor> pendingPlayers = gameModel.getPlayersWhoHaveNotSwapped();
-        
-        if (pendingPlayers.isEmpty()) {
-            // Fin de la phase d'échange, retour au jeu
+    private void startSwapPhase() {
+        // Déléguer au SwapController
+        SwapController swapController = new SwapController(primaryStage, gameModel, () -> {
+            // Callback quand l'échange est fini
             openGamePage();
             gameView.showOverlayMessage("Échanges terminés ! À vous de jouer.", 2000);
-            return;
-        }
-
-        // Trier pour avoir un ordre déterministe
-        List<Actor> sortedPlayers = new ArrayList<>(pendingPlayers);
-        sortedPlayers.sort(Comparator.comparingInt(Actor::getPlayerIndex));
-
-        // On prend le premier joueur disponible
-        Actor player = sortedPlayers.get(0);
-        if (!(player instanceof JoueurEquipe)) return;
-
-        JoueurEquipe teamPlayer = (JoueurEquipe) player;
-        JoueurEquipe teammate = teamPlayer.getTeammate();
-
-        ExchangePage exchangeView = new ExchangePage(
-            teamPlayer.getName(),
-            teammate.getName(),
-            teamPlayer.getHand().getCards()
-        );
-
-        exchangeView.setOnCardSelected(card -> {
-            handleTeammateSelection(teamPlayer, teammate, card);
         });
-
-        primaryStage.getScene().setRoot(exchangeView.getRoot());
-        primaryStage.setTitle("Échange - " + teamPlayer.getName());
-    }
-
-    private void handleTeammateSelection(JoueurEquipe player1, JoueurEquipe player2, Card cardFromP1) {
-        ExchangePage exchangeView = new ExchangePage(
-            player2.getName(),
-            player1.getName(),
-            player2.getHand().getCards()
-        );
-
-        exchangeView.setOnCardSelected(cardFromP2 -> {
-            // Exécuter l'échange
-            boolean success = gameModel.exchangeCards(player1.getPlayerIndex(), cardFromP1, cardFromP2);
-            
-            if (success) {
-                // Passer à l'équipe suivante ou au jeu
-                handleSwapPhase();
-            } else {
-                showErrorMessage("Erreur lors de l'échange !");
-                handleSwapPhase(); // Retry
-            }
-        });
-
-        primaryStage.getScene().setRoot(exchangeView.getRoot());
-        primaryStage.setTitle("Échange - " + player2.getName());
+        swapController.startSwapPhase();
     }
 
     private void openGamePage() {
@@ -342,18 +289,20 @@ public class GameController {
         hidePlayerHand();
         updateGameDisplay();
 
-        // Vérifier si une phase d'échange a été déclenchée (Trio en mode équipe)
+        // PRIORITÉ ABSOLUE : Vérifier si la partie est finie
+        if (gameModel.isGameEnded()) {
+            endGame();
+            return; // On arrête tout ici
+        }
+
+        // Ensuite, vérifier si une phase d'échange a été déclenchée (Trio en mode équipe)
         if (gameModel.getCurrentPhase() == Game.GamePhase.POST_TRIO_SWAP) {
-            handleSwapPhase();
+            startSwapPhase();
             return;
         }
 
-        // Action pour afficher le tour suivant
-        if (!gameModel.isGameEnded()) {
-            gameView.showOverlayMessage("Tour de " + gameModel.getCurrentPlayer().getName(), 2000);
-        } else {
-            endGame();
-        }
+        // Sinon, on continue le jeu
+        gameView.showOverlayMessage("Tour de " + gameModel.getCurrentPlayer().getName(), 2000);
     }
 
     // --- Navigation et Pages Annexes ---
@@ -437,61 +386,9 @@ public class GameController {
     }
 
     private void endGame() {
-        Actor winner = gameModel.getWinner();
-        boolean isTeamMode = gameModel.isTeamMode();
-        
-        // Déterminer la raison de la victoire
-        String winReason = "3 Trios";
-        if (winner != null) {
-            CompletedTrios completedTrios = gameModel.getCompletedTrios();
-            List<List<Card>> winnerTrios = completedTrios.getTriosForPlayer(winner.getPlayerIndex());
-            if (winnerTrios != null) {
-                for (List<Card> trio : winnerTrios) {
-                    if (!trio.isEmpty() && trio.get(0).getValue() == 7) {
-                        winReason = "Trio de 7 !";
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Construire la map des scores
-        Map<String, List<List<Card>>> allScores = new LinkedHashMap<>();
-        if (isTeamMode) {
-            int teamsCount = gameModel.getPlayers().size() / 2;
-            for (int teamId = 1; teamId <= teamsCount; teamId++) {
-                int p1Index = teamId - 1;
-                int p2Index = p1Index + teamsCount;
-                
-                List<List<Card>> teamTrios = new ArrayList<>();
-                List<List<Card>> t1 = gameModel.getCompletedTrios().getTriosForPlayer(p1Index);
-                List<List<Card>> t2 = gameModel.getCompletedTrios().getTriosForPlayer(p2Index);
-                
-                if (t1 != null) teamTrios.addAll(t1);
-                if (t2 != null) teamTrios.addAll(t2);
-                
-                String teamName = "Équipe " + teamId + " (" + gameModel.getPlayers().get(p1Index).getName() + " & " + gameModel.getPlayers().get(p2Index).getName() + ")";
-                allScores.put(teamName, teamTrios);
-            }
-        } else {
-            for (Actor player : gameModel.getPlayers()) {
-                List<List<Card>> trios = gameModel.getCompletedTrios().getTriosForPlayer(player.getPlayerIndex());
-                if (trios == null) trios = new ArrayList<>();
-                allScores.put(player.getName(), trios);
-            }
-        }
-
-        // Afficher la page de fin
-        EndGamePage endGameView = new EndGamePage(winner, isTeamMode, winReason, allScores);
-        primaryStage.getScene().setRoot(endGameView.getRoot());
-        
-        endGameView.getReplayButton().setOnAction(e -> {
-            new MenuController(primaryStage).show();
-        });
-        
-        endGameView.getQuitButton().setOnAction(e -> {
-            primaryStage.close();
-        });
+        // Déléguer au EndGameController
+        EndGameController endGameController = new EndGameController(primaryStage, gameModel);
+        endGameController.showEndGame();
     }
 
     // --- Utilitaires ---
@@ -583,20 +480,6 @@ public class GameController {
             for (List<Card> trio : trios) {
                 if (trio != null && !trio.isEmpty()) combinedTrios.add(trio.getFirst());
             }
-        }
-    }
-
-    private void showInfoMessage(String message) {
-        // On garde les Alert pour les infos système si besoin, mais on préfère l'overlay
-        // Pour l'instant, on redirige vers l'overlay si la vue est dispo
-        if (gameView != null) {
-            gameView.showOverlayMessage(message, 2000);
-        } else {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Information");
-            alert.setHeaderText(null);
-            alert.setContentText(message);
-            alert.showAndWait();
         }
     }
 

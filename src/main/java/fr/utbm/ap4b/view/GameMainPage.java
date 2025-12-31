@@ -668,7 +668,7 @@ public class GameMainPage {
         largestCard.setAlignment(Pos.CENTER);
         largestCard.setWrapText(true);
 
-        vBox.getChildren().addAll(printButton, smallestCard, largestCard);
+        vBox.getChildren().addAll(printButton, largestCard, smallestCard);
 
         return vBox;
     }
