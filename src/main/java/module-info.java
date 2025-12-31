@@ -2,6 +2,7 @@ module fr.utbm.ap4b.trio {
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.graphics;
+    requires java.desktop;
 
     opens fr.utbm.ap4b to javafx.fxml;
     opens fr.utbm.ap4b.view to javafx.fxml;

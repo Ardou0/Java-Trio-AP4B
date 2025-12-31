@@ -1,9 +1,5 @@
 package fr.utbm.ap4b.controller;
-import fr.utbm.ap4b.model.Actor;
-import fr.utbm.ap4b.model.Card;
-import fr.utbm.ap4b.model.Game;
-import fr.utbm.ap4b.model.CardLocation;
-import fr.utbm.ap4b.model.JoueurEquipe;
+import fr.utbm.ap4b.model.*;
 import fr.utbm.ap4b.view.DrawPilePage;
 import fr.utbm.ap4b.view.GameMainPage;
 import fr.utbm.ap4b.view.RulesPage;
@@ -18,10 +14,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+
+import java.util.*;
 
 public class TrioController {
 
@@ -34,6 +28,7 @@ public class TrioController {
     private Game gameModel;
     private Integer selectedPlayer = null;
     private List<String> playerNames = new ArrayList<>();
+    private int initialPlayerId;
 
     // Pour suivre l'état du jeu
     private int turnCounter = 0;
@@ -154,7 +149,10 @@ public class TrioController {
     }
 
     private void openGamePage(){
-        gameView = new GameMainPage(nbPlayers, gameModel.getCurrentPlayer().getPlayerIndex() + 1);
+        // Stocker l'ID du joueur pour lequel la vue est créée
+        initialPlayerId = gameModel.getCurrentPlayer().getPlayerIndex()+1;
+
+        gameView = new GameMainPage(nbPlayers, initialPlayerId);
         primaryStage.getScene().setRoot(gameView.getRoot());
         primaryStage.setTitle("Jeu du Trio");
 
@@ -243,8 +241,39 @@ public class TrioController {
 
     private void openDrawPilePage() {
         try{
+            // Récupère toutes les cartes de la pioche
+            List<Card> allCards = gameModel.getDrawPile().getRemainingCards();
+
+            List<Card> availableCards = filterCardsNotInUse(allCards);
+
+            if (availableCards.isEmpty()) {
+                showErrorMessage("La pioche est vide !");
+                return;
+            }
+
             //Créer la vue des règles
-            DrawPilePage drawPileView = new DrawPilePage(9);
+            DrawPilePage drawPileView = new DrawPilePage(availableCards);
+
+            drawPileView.setCardSelectionHandler(card -> {
+                if(gameModel.canRevealCard()){
+                    //Révèle la carte depuis la pioche
+                    gameModel.revealCardFromDrawPile(card);
+
+                    // Message de confirmation
+                    showInfoMessage("Carte " + card.getValue() + " révélée depuis la pioche !");
+
+                    //Met à jour l'affichage
+                    updateGameDisplay();
+
+                    // Retourne au jeu
+                    primaryStage.getScene().setRoot(gameView.getRoot());
+
+                    handleAfterReveal();
+
+                } else {
+                    showErrorMessage("Vous ne pouvez pas révéler plus de cartes !");
+                }
+            });
 
             //Créer une scene avec cette vue
             primaryStage.getScene().setRoot(drawPileView.getRoot());
@@ -258,13 +287,71 @@ public class TrioController {
         }
         catch(Exception e){
             e.printStackTrace(); //Affiche erreurs dans la console
+            showErrorMessage("Erreur lors de l'ouverture de la pioche");
         }
+    }
+
+    private List<Card> filterCardsNotInUse(List<Card> allCards){
+        List<Card> availableCards = new ArrayList<>();
+
+        for(Card card : allCards){
+            if(!isCardCurrentlyInUse(card)){
+                availableCards.add(card);
+            }
+        }
+        System.out.println("DEBUG: Cartes filtrées - " + availableCards.size() +
+                " disponibles sur " + allCards.size() + " totales");
+
+        return  availableCards;
+    }
+
+    private boolean isCardCurrentlyInUse(Card card){
+        // Vérifie si la carte est sur le board (dans revealedCards)
+        for(CardLocation location: gameModel.getRevealedCards()){
+            if(location.getCard().equals(card)){
+                return true;
+            }
+        }
+
+        // Vérifie si la carte fait partie d'un trio complété
+        CompletedTrios completedTrios = gameModel.getCompletedTrios();
+        if(completedTrios != null){
+            //Parcourt tous les joueurs
+            for(int playerId = 0; playerId < gameModel.getPlayers().size(); playerId++){
+
+                List<List<Card>> playerTrios = completedTrios.getTriosForPlayer(playerId);
+                if(playerTrios != null){
+
+                    //Parcourt tous les trios du joueur
+                    for(List<Card> trio : playerTrios){
+
+                        if(trio != null && !trio.contains(card)){
+
+                            for(Card trioCard : trio){
+
+                                if (trioCard.equals(card)){
+                                    return true;
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+        }
+        return false;
     }
 
     private void openTrioSoloPage() {
         try{
+            Map<Integer, List<Card>> playerTrios = getPlayerTriosCards();
+
             //Créer la vue des trios
-            TrioSoloPage trioView = new TrioSoloPage(nbPlayers);
+            TrioSoloPage trioView = new TrioSoloPage(nbPlayers, playerNames, playerTrios);
 
             //Créer une scene avec cette vue
             primaryStage.getScene().setRoot(trioView.getRoot());
@@ -283,8 +370,9 @@ public class TrioController {
 
     private void openTrioTeamPage() {
         try{
+            Map<Integer, List<Card>> teamTrios = getTeamTriosCards();
             //Créer la vue des trios en équipe
-            TrioTeamPage trioView = new TrioTeamPage(nbPlayers/2);
+            TrioTeamPage trioView = new TrioTeamPage(nbPlayers/2, playerNames, teamTrios);
 
             //Créer une scene avec cette vue
             primaryStage.getScene().setRoot(trioView.getRoot());
@@ -299,6 +387,89 @@ public class TrioController {
         catch(Exception e){
             e.printStackTrace(); //Affiche erreurs dans la console
         }
+    }
+
+    private Map<Integer, List<Card>> getPlayerTriosCards(){
+        Map<Integer, List<Card>> playerTrios = new HashMap<>();
+
+        if(gameModel != null && gameModel.getCompletedTrios() != null){
+            CompletedTrios completedTrios = gameModel.getCompletedTrios();
+
+            for(int playerId = 0; playerId < gameModel.getPlayers().size(); playerId++){
+                List<List<Card>> trioLists = completedTrios.getTriosForPlayer(playerId);
+
+                if (trioLists != null && !trioLists.isEmpty()){
+                    //Prend une carte pour chaque trio
+                    List<Card> representativeCards = new ArrayList<>();
+                    for(List<Card> trio: trioLists){
+                        if(trio != null && !trio.isEmpty()){
+                            representativeCards.add(trio.getFirst()); //Prend la première carte
+                        }
+                    }
+                    playerTrios.put(playerId + 1, representativeCards);
+                }
+            }
+        }
+        return playerTrios;
+    }
+
+    private Map<Integer, List<Card>> getTeamTriosCards(){
+        Map<Integer, List<Card>> teamTrios = new HashMap<>();
+
+        if(gameModel != null && gameModel.isTeamMode() && gameModel.getCompletedTrios() != null){
+            CompletedTrios completedTrios = gameModel.getCompletedTrios();
+            int teamsCount = nbPlayers / 2; // 2 joueurs par équipe
+
+            // Calcule les IDs des deux joueurs de l'équipe
+            // Pour 4 joueurs : équipe 1 = joueurs 1 et 3 (IDs modèle: 0 et 2)
+            // Pour 6 joueurs : équipe 1 = joueurs 1 et 4 (IDs modèle: 0 et 3)
+            for(int teamId = 0; teamId <= teamsCount; teamId++){
+                int firstPlayerId = (teamId - 1);
+                int secondPlayerId = firstPlayerId + teamsCount;
+
+                System.out.println("DEBUG Équipe " + teamId + ": Joueur " +
+                        (firstPlayerId + 1) + " (ID " + firstPlayerId + ") et Joueur " +
+                        (secondPlayerId + 1) + " (ID " + secondPlayerId + ")");
+
+                List<Card> combinedTrios = new ArrayList<>();
+
+                //Trios du 1e joueur
+                List<List<Card>> trios1 = completedTrios.getTriosForPlayer(firstPlayerId);
+                if(trios1 != null && !trios1.isEmpty()){
+                    for(List<Card> trio: trios1){
+                        if(trio != null && !trio.isEmpty()){
+                            combinedTrios.add(trio.getFirst());
+                            System.out.println("  - Trio du joueur " + (firstPlayerId + 1) +
+                                    ": carte " + trio.getFirst().getValue());
+                        }
+                    }
+                }
+
+                // Trios du 2e joueur
+                List<List<Card>> trios2 = completedTrios.getTriosForPlayer(secondPlayerId);
+                if(trios2 != null && !trios2.isEmpty()){
+                    for(List<Card> trio: trios2){
+                        if(trio != null && !trio.isEmpty()){
+                            combinedTrios.add(trio.getFirst());
+                            System.out.println("  - Trio du joueur " + (secondPlayerId + 1) +
+                                    ": carte " + trio.getFirst().getValue());
+                        }
+                    }
+                }
+
+                //Trier par valeur
+                combinedTrios.sort(Comparator.comparing(Card::getValue));
+
+                if(!combinedTrios.isEmpty()){
+                    teamTrios.put(teamId, combinedTrios);
+                    System.out.println("  Total pour équipe " + teamId + ": " +
+                            combinedTrios.size() + " trios");
+                    showInfoMessage("Total pour équipe " + teamId + ": " +
+                            combinedTrios.size() + " trios");
+                }
+            }
+        }
+        return teamTrios;
     }
 
     private void startGame() {
@@ -361,9 +532,20 @@ public class TrioController {
         }
 
         try{
+            // DEBUG: Avant révélation
+            Actor player = gameModel.getPlayers().get(modelPlayerId);
+            int handSizeBefore = player.getHand().getCards().size();
+            System.out.println("DEBUG: Main du joueur " + player.getName() +
+                    " avant révélation: " + handSizeBefore + " cartes");
+
             //Révèle la carte
             gameModel.revealSmallestCardFromPlayer(modelPlayerId);
             updateGameDisplay();
+
+            // DEBUG: Après révélation
+            int handSizeAfter = player.getHand().getCards().size();
+            System.out.println("DEBUG: Main du joueur " + player.getName() +
+                    " après révélation: " + handSizeAfter + " cartes");
 
             //Vérifie ce qu'il faut faire après la révélation
             handleAfterReveal();
@@ -430,8 +612,21 @@ public class TrioController {
         }
 
         try{
+            // Récupère la carte avant de la révéler
+            Actor player = gameModel.getCurrentPlayer();
+            Card revealedCard = player.getHand().getSmallestCard();
+
+            if (revealedCard == null) {
+                showErrorMessage("Aucune carte disponible !");
+                return;
+            }
+
             //Révèle la carte
             gameModel.revealSmallestCardFromPlayer(currentPlayer);
+
+            //Marque la carte comme révélée dans la vue
+            gameView.markCardAsRevealed(revealedCard);
+
             updateGameDisplay();
 
             //Vérifie ce qu'il faut faire après la révélation
@@ -456,8 +651,21 @@ public class TrioController {
         }
 
         try{
+            // Récupère la carte avant de la révéler
+            Actor player = gameModel.getCurrentPlayer();
+            Card revealedCard = player.getHand().getLargestCard();
+
+            if (revealedCard == null) {
+                showErrorMessage("Aucune carte disponible !");
+                return;
+            }
+
             //Révèle la carte
             gameModel.revealLargestCardFromPlayer(currentPlayer);
+
+            //Marque la carte comme révélée dans la vue
+            gameView.markCardAsRevealed(revealedCard);
+
             updateGameDisplay();
 
             //Vérifie ce qu'il faut faire après la révélation
@@ -478,8 +686,12 @@ public class TrioController {
             Card card2 = revealedCards.get(1).getCard();
 
             if (card1.getValue() != card2.getValue()) {
-                showInfoMessage("Cartes différentes - Fin du tour");
+                showInfoMessage("Cartes différentes (" + card1.getValue() +
+                        " et " + card2.getValue() + ") - Fin du tour");
                 nextTurn(); // Le modèle gère toute la logique
+            }else{
+                showInfoMessage("Cartes identiques (" + card1.getValue() +
+                        "). Vous pouvez révéler une troisième carte !");
             }
         } else if (revealedCards.size() == 3) {
             showInfoMessage("3 cartes révélées. Vérification du trio");
@@ -497,6 +709,9 @@ public class TrioController {
         } else {
             showInfoMessage("Tour terminé");
         }
+
+        // Réinitialise l'affichage des cartes révélées
+        gameView.resetRevealedCards();
 
         // Met à jour l'interface
         updateGameDisplay();
@@ -524,49 +739,46 @@ public class TrioController {
     private void updateGameDisplay() {
         // Mettre à jour les informations affichées
         Actor currentPlayer = gameModel.getCurrentPlayer();
+        int currentPlayerId = currentPlayer.getPlayerIndex() + 1;
+        List<CardLocation> revealedCards = gameModel.getRevealedCards();
 
-        // Mettre à jour les noms des joueurs dans la vue
+        //Met à jour le joueur actuel
+        gameView.setActualPlayer(currentPlayerId);
+
+        //Prépae les noms de tous les joueurs
         for (Actor player : gameModel.getPlayers()) {
             int viewId = player.getPlayerIndex() + 1;
-            if (viewId != gameModel.getCurrentPlayer().getPlayerIndex() + 1) {
-                Button btn = gameView.getOpponentButton(viewId);
-                if (btn != null) {
-                    btn.setText(player.getName());
-                }
-            }
+            gameView.updatePlayerName(viewId, player.getName());
         }
 
-        // Mettre à jour le titre
-        gameView.getTitleLabel().setText("Cartes de " + gameModel.getCurrentPlayer().getName());
+        // Met à jour le titre
+        gameView.updateTitle(currentPlayer.getName());
+
+        // Mettre à jour la main du joueur actuel
+        List<Card> playerHand = currentPlayer.getHand().getCards();
+        gameView.setCurrentHand(playerHand);
 
         // Met à jour le board avec les cartes révélées
-        List<CardLocation> revealedCards = gameModel.getRevealedCards();
         gameView.updateBoard(revealedCards);
 
-        // Afficher les cartes révélées
-        if (!revealedCards.isEmpty()) {
-            StringBuilder cardsInfo = new StringBuilder("Cartes révélées : ");
-            for (CardLocation loc : revealedCards) {
-                String source = loc.getSourcePlayer() != null ?
-                        loc.getSourcePlayer().getName() : "Pioche";
-                cardsInfo.append(loc.getCard().getValue())
-                        .append(" (")
-                        .append(source)
-                        .append("), ");
-            }
-            // Retirer la dernière virgule
-            if (cardsInfo.length() > 2) {
-                cardsInfo.setLength(cardsInfo.length() - 2);
-            }
-//            showInfoMessage(cardsInfo.toString());
-        }
         // Nettoie le board si aucune carte n'est révélée
         if (revealedCards.isEmpty()) {
             gameView.clearBoard();
         }
 
+        //Gère les flèches
+        updateArrowButtons(revealedCards);
+
+        // Debug/log
+        logGameState(currentPlayer, revealedCards);
+
+        // Mettre à jour le tour actuel
+        showInfoMessage("Tour " + turnCounter + " - " + currentPlayer.getName() + " joue");
+    }
+
+    private void updateArrowButtons(List<CardLocation> revealedCards) {
         // Met à jour l'état des boutons flèches
-        if (selectedPlayer != null && gameModel.getRevealedCards().size() < 3) {
+        if (selectedPlayer != null && revealedCards.size() < 3) {
             // Si un joueur est sélectionné et on peut encore révéler des cartes
             gameView.showArrowsForPlayer(selectedPlayer);
         } else {
@@ -574,9 +786,22 @@ public class TrioController {
             gameView.hideAllArrows();
             selectedPlayer = null;
         }
+    }
 
-        // Mettre à jour le tour actuel
-        showInfoMessage("Tour " + turnCounter + " - " + currentPlayer.getName() + " joue");
+    private void logGameState(Actor currentPlayer, List<CardLocation> revealedCards) {
+        System.out.println("\n=== Tour " + turnCounter + " ===");
+        System.out.println("Joueur: " + currentPlayer.getName());
+        System.out.println("Cartes révélées: " + revealedCards.size());
+
+        if (!revealedCards.isEmpty()) {
+            System.out.print("  Détails: ");
+            for (CardLocation loc : revealedCards) {
+                String source = loc.getSourcePlayer() != null ?
+                        loc.getSourcePlayer().getName() : "Pioche";
+                System.out.print(loc.getCard().getValue() + "(" + source + ") ");
+            }
+            System.out.println();
+        }
     }
 
     private void endGame() {

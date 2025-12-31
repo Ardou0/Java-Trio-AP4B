@@ -1,24 +1,35 @@
 package fr.utbm.ap4b.view;
 
+import fr.utbm.ap4b.model.Card;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.*;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class TrioSoloPage {
 
     private final int nombreDeJoueurs;
+    private final List<String> playerNames;
+    private final Map<Integer, List<Card>> playerTrios; //Joueur ID -> liste de trios
     private BorderPane root;// Conteneur principal
     private Button endBtn;
+    private Map<Integer,List<StackPane>> playerSlots = new HashMap<>();
 
-    public TrioSoloPage(int nombreJoueur){
+    public TrioSoloPage(int nombreJoueur, List<String> playerNames, Map<Integer, List<Card>> playerTrios) {
         this.nombreDeJoueurs = nombreJoueur;
+        this.playerNames = playerNames;
+        this.playerTrios = playerTrios != null ? playerTrios : new HashMap<>();
         showScreen();
     }
 
@@ -92,15 +103,30 @@ public class TrioSoloPage {
                 "-fx-border-width: 3;" +
                 "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);");
 
-        // Création de 3 cases pour ce joueur
+        String playerLabel = (numeroJoueur - 1 < playerNames.size() ? playerNames.get(numeroJoueur - 1) : "Joueur " + numeroJoueur);
+
+        Label label = new Label(playerLabel);
+        label.setStyle("-fx-font-size: 14px;");
+        label.setMaxWidth(80);
+
+        // Création de 3 cases pour les trios à droite du label
+        HBox slotsContainer = new HBox(10);
+        slotsContainer.setAlignment(Pos.CENTER);
+
+        List<StackPane> slots = new ArrayList<>();
+
         for (int i = 0; i < 3; i++) {
             StackPane slot = createSlot();
-            box.getChildren().add(slot);
+            slots.add(slot);
+            slotsContainer.getChildren().add(slot);
         }
 
-        Label label = new Label("Joueur " + numeroJoueur);
-        label.setStyle("-fx-font-size: 14px;");
-        box.getChildren().add(0, label); // Ajouter au début
+        playerSlots.put(numeroJoueur, slots);
+
+        //Affiche les trios
+        displayPlayerTrios(numeroJoueur);
+
+        box.getChildren().addAll(label, slotsContainer); // Ajouter au début
 
         return box;
     }
@@ -126,6 +152,47 @@ public class TrioSoloPage {
         slot.setMouseTransparent(true);
 
         return slot;
+    }
+
+    private void displayPlayerTrios(int playerId) {
+        List<Card> trios =  playerTrios.get(playerId);
+        if (trios == null || trios.isEmpty()) return;
+
+        List<StackPane> slots = playerSlots.get(playerId);
+        if (slots == null || slots.isEmpty()) return;
+
+        // Afficher chaque carte représentative dans un slot
+        for (int i = 0; i < Math.min(trios.size(), 3); i++){
+            Card card = trios.get(i);
+            displayCardInSlot(slots.get(i), card);
+        }
+    }
+
+    private void displayCardInSlot(StackPane slot, Card card) {
+        slot.getChildren().clear();
+
+        try{
+            InputStream is = getClass().getResourceAsStream(card.getImagePath());
+            if(is != null){
+                Image cardImage = new Image(is);
+                ImageView cardView = new ImageView(cardImage);
+                cardView.setFitHeight(90);
+                cardView.setFitWidth(60);
+                cardView.setPreserveRatio(true);
+
+                slot.getChildren().add(cardView);
+            }else{
+                // Fallback
+                Label valueLabel = new Label(String.valueOf(card.getValue()));
+                valueLabel.setStyle("-fx-font-size: 20px;");
+                slot.getChildren().add(valueLabel);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            Label valueLabel = new Label(String.valueOf(card.getValue()));
+            valueLabel.setStyle("-fx-font-size: 16px;");
+            slot.getChildren().add(valueLabel);
+        }
     }
 
     public Button getEndBtn() {return endBtn;}
