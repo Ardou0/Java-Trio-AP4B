@@ -101,6 +101,12 @@ public class Game {
     public Set<Actor> getPlayersAllowedToSwap() {
         return playersAllowedToSwap;
     }
+    
+    public Set<Actor> getPlayersWhoHaveNotSwapped() {
+        Set<Actor> pending = new HashSet<>(playersAllowedToSwap);
+        pending.removeAll(playersWhoHaveSwapped);
+        return pending;
+    }
 
     public boolean isGameStarted() {
         return isGameStarted;

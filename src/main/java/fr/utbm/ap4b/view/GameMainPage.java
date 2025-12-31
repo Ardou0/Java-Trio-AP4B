@@ -2,6 +2,8 @@ package fr.utbm.ap4b.view;
 
 import fr.utbm.ap4b.model.Card;
 import fr.utbm.ap4b.model.CardLocation;
+import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -10,6 +12,7 @@ import javafx.scene.layout.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
 
 import java.io.InputStream;
 import java.util.*;
@@ -22,7 +25,8 @@ public class GameMainPage {
 
     // Composants graphiques principaux
     private final int nombreJoueurs;
-    private BorderPane root; // Conteneur principal
+    private StackPane rootStack; // Conteneur racine pour superposer les couches
+    private BorderPane gameRoot; // Conteneur du jeu
     private Button rulesButton; //Bouton menant à la page de règle
     private Button trioButton;
     private Button drawPileButton;
@@ -47,6 +51,7 @@ public class GameMainPage {
 
     private Set<Card> revealedCards = new HashSet<>(); // Cartes déjà révélées
     private List<Card> currentHand = new ArrayList<>(); // Main actuelle du joueur
+    private boolean areCardsVisible = false; // État de visibilité des cartes
 
 
     public GameMainPage(int nombreJoueurs, int actualPlayer) {
@@ -57,13 +62,153 @@ public class GameMainPage {
 
     //Affiche la page javaFX
     private void showScreen(){
-        root = new BorderPane();
-        root.setPadding(new Insets(10));
-        root.setCenter(createHandArea());
-        root.setTop(createRulesButton());
-        root.setBottom(createBoardContainer());
-        root.setLeft(createOpponentArea());
-        root.setRight(createPersonalArea());
+        rootStack = new StackPane();
+        gameRoot = new BorderPane();
+        gameRoot.setPadding(new Insets(10));
+        gameRoot.setCenter(createHandArea());
+        gameRoot.setTop(createRulesButton());
+        gameRoot.setBottom(createBoardContainer());
+        gameRoot.setLeft(createOpponentArea());
+        gameRoot.setRight(createPersonalArea());
+        
+        rootStack.getChildren().add(gameRoot);
+    }
+
+    /**
+     * Désactive le bouton Pioche pour le mode équipe
+     */
+    public void disableDrawPileForTeamMode() {
+        if (drawPileButton != null) {
+            drawPileButton.setText(""); // Enlever le texte
+            drawPileButton.setDisable(true); // Désactiver l'interaction
+            // Style "décor" : fond sombre, pas de bordure interactive
+            drawPileButton.setStyle(
+                "-fx-background-color: #3E2C1C;" + // Marron très foncé
+                "-fx-opacity: 1.0;" + // Garder l'opacité à 100% même désactivé
+                "-fx-border-color: #2A1E12;" +
+                "-fx-border-width: 2;"
+            );
+        }
+    }
+
+    /**
+     * Affiche un message temporaire en overlay (sans callback)
+     */
+    public void showOverlayMessage(String message, int durationMillis) {
+        showOverlayMessage(message, durationMillis, null);
+    }
+
+    /**
+     * Affiche un message temporaire en overlay avec une action à la fin
+     */
+    public void showOverlayMessage(String message, int durationMillis, Runnable onFinished) {
+        Label messageLabel = new Label(message);
+        messageLabel.setStyle(
+            "-fx-background-color: rgba(0, 0, 0, 0.7);" +
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 24px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-padding: 20px;" +
+            "-fx-background-radius: 10px;"
+        );
+        messageLabel.setWrapText(true);
+        messageLabel.setMaxWidth(400);
+        messageLabel.setTextAlignment(TextAlignment.CENTER);
+        messageLabel.setAlignment(Pos.CENTER); // Centrer le texte dans le label
+
+        StackPane overlay = new StackPane(messageLabel);
+        overlay.setAlignment(Pos.CENTER); // Centrer le label dans l'overlay
+        
+        // Ajouter l'overlay à la racine
+        rootStack.getChildren().add(overlay);
+
+        // Animation d'apparition
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlay);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        fadeIn.play();
+
+        // Disparition automatique
+        PauseTransition delay = new PauseTransition(Duration.millis(durationMillis));
+        delay.setOnFinished(e -> {
+            FadeTransition fadeOut = new FadeTransition(Duration.millis(300), overlay);
+            fadeOut.setFromValue(1);
+            fadeOut.setToValue(0);
+            fadeOut.setOnFinished(event -> {
+                rootStack.getChildren().remove(overlay);
+                // Exécuter l'action suivante si elle existe
+                if (onFinished != null) {
+                    onFinished.run();
+                }
+            });
+            fadeOut.play();
+        });
+        delay.play();
+    }
+
+    /**
+     * Affiche un message bloquant avec un bouton pour continuer
+     */
+    public void showBlockingMessage(String message, String buttonText, Runnable onConfirm) {
+        Label messageLabel = new Label(message);
+        messageLabel.setStyle(
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 24px;" +
+            "-fx-font-weight: bold;" +
+            "-fx-padding: 0 0 20px 0;"
+        );
+        messageLabel.setWrapText(true);
+        messageLabel.setMaxWidth(400);
+        messageLabel.setTextAlignment(TextAlignment.CENTER);
+        messageLabel.setAlignment(Pos.CENTER);
+
+        Button confirmButton = new Button(buttonText);
+        confirmButton.setStyle(
+            "-fx-background-color: #8B7355;" +
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 18px;" +
+            "-fx-padding: 10px 20px;" +
+            "-fx-background-radius: 5px;" +
+            "-fx-border-color: transparent;" + // Fix pour le border radius
+            "-fx-background-insets: 0;" // Fix pour le background
+        );
+        confirmButton.setOnMouseEntered(e -> confirmButton.setStyle("-fx-background-color: #5C4C38; -fx-text-fill: white; -fx-font-size: 18px; -fx-padding: 10px 20px; -fx-background-radius: 5px; -fx-border-color: transparent; -fx-background-insets: 0;"));
+        confirmButton.setOnMouseExited(e -> confirmButton.setStyle("-fx-background-color: #8B7355; -fx-text-fill: white; -fx-font-size: 18px; -fx-padding: 10px 20px; -fx-background-radius: 5px; -fx-border-color: transparent; -fx-background-insets: 0;"));
+
+        VBox content = new VBox(messageLabel, confirmButton);
+        content.setAlignment(Pos.CENTER);
+        content.setStyle(
+            "-fx-background-color: rgba(0, 0, 0, 0.85);" +
+            "-fx-padding: 30px;" +
+            "-fx-background-radius: 15px;" +
+            "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 10, 0, 0, 0);"
+        );
+        content.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+
+        StackPane overlay = new StackPane(content);
+        overlay.setAlignment(Pos.CENTER);
+        
+        // Ajouter l'overlay à la racine
+        rootStack.getChildren().add(overlay);
+
+        // Animation d'apparition
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlay);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        fadeIn.play();
+
+        confirmButton.setOnAction(e -> {
+            FadeTransition fadeOut = new FadeTransition(Duration.millis(300), overlay);
+            fadeOut.setFromValue(1);
+            fadeOut.setToValue(0);
+            fadeOut.setOnFinished(event -> {
+                rootStack.getChildren().remove(overlay);
+                if (onConfirm != null) {
+                    onConfirm.run();
+                }
+            });
+            fadeOut.play();
+        });
     }
 
     /**
@@ -310,7 +455,7 @@ public class GameMainPage {
      */
     public void updateHandDisplay() {
         // Vide la grille existante
-        GridPane handGrid = (GridPane) root.getCenter();
+        GridPane handGrid = (GridPane) gameRoot.getCenter();
         handGrid.getChildren().removeIf(node ->
                 //Supprime tout ce qui n'est pzs sur la ligne 0 (titre)
                 node instanceof ImageView && GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) > 0);
@@ -332,7 +477,25 @@ public class GameMainPage {
         // Affiche les cartes restantes
         for (int i = 0; i < cardsToDisplay.size() && i < 9; i++) {
             Card card = cardsToDisplay.get(i);
-            ImageView cardView = new ImageView(imageVerso);
+            ImageView cardView;
+
+            if (areCardsVisible) {
+                // Si les cartes doivent être visibles, on charge leur image
+                try {
+                    InputStream is = getClass().getResourceAsStream(card.getImagePath());
+                    if (is != null) {
+                        cardView = new ImageView(new Image(is));
+                    } else {
+                        cardView = new ImageView(imageVerso); // Fallback
+                    }
+                } catch (Exception e) {
+                    cardView = new ImageView(imageVerso); // Fallback
+                }
+            } else {
+                // Sinon on affiche le dos
+                cardView = new ImageView(imageVerso);
+            }
+
             cardView.setFitWidth(100);
             cardView.setFitHeight(150);
             cardView.setPreserveRatio(true);
@@ -394,11 +557,12 @@ public class GameMainPage {
         VBox vBox = new VBox(5);
         vBox.setAlignment(Pos.CENTER);
         vBox.setPadding(new Insets(5));
+        vBox.setMinWidth(220); // Force une largeur minimale pour éviter le wrapping
 
         //Explication des boutons
         Label explanation = new Label("Choisis un joueur à qui voir une carte");
         explanation.setPrefWidth(200);
-        explanation.setStyle("-fx-font-size: 18px; ");
+        explanation.setStyle("-fx-font-size: 16px; "); // Réduction légère de la police
         explanation.setWrapText(true);
         explanation.setAlignment(Pos.CENTER);
         explanation.setTextAlignment(TextAlignment.CENTER);
@@ -613,12 +777,21 @@ public class GameMainPage {
         updateOpponentButtons();
     }
 
+    public void setCardsVisible(boolean visible) {
+        this.areCardsVisible = visible;
+        updateHandDisplay();
+    }
+
+    public boolean areCardsVisible() {
+        return areCardsVisible;
+    }
+
     // Getter pour le bouton du joueur
     public Button getOpponentButton(int playerId) {
         return opponentButtons.get(playerId);
     }
 
-    public BorderPane getRoot() {return root;}
+    public StackPane getRoot() {return rootStack;}
 
     /**
      * Renvoie le bouton des règles

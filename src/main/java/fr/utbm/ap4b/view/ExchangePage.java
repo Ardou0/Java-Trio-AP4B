@@ -1,6 +1,6 @@
 package fr.utbm.ap4b.view;
 
-import javafx.geometry.HPos;
+import fr.utbm.ap4b.model.Card;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -8,93 +8,196 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.paint.Color;
 
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public class ExchangePage {
 
-    private final int nombreCartes;
-    private final int numeroJoueur;
-    private final String nomJoueur;
-    private Button validButton;
     private BorderPane root;
+    private Consumer<Card> onCardSelected;
+    private Card selectedCard = null;
+    private Button confirmButton;
+    private Button revealButton;
+    private boolean areCardsVisible = false;
+    private Map<Card, ImageView> cardViews = new HashMap<>();
+    private Image cardBackImage;
 
-    public ExchangePage(int  nombreCartes, int numeroJoueur, String nomJoueur){
-        this.nombreCartes = nombreCartes;
-        this.numeroJoueur = numeroJoueur;
-        this.nomJoueur = nomJoueur;
-        showScreen();
+    public ExchangePage(String playerName, String teammateName, List<Card> hand) {
+        loadResources();
+        createView(playerName, teammateName, hand);
     }
 
-    private void showScreen(){
+    private void loadResources() {
+        try {
+            InputStream is = getClass().getResourceAsStream("/images/carte_verso.png");
+            if (is != null) {
+                cardBackImage = new Image(is);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createView(String playerName, String teammateName, List<Card> hand) {
         root = new BorderPane();
-        root.setPadding(new Insets(10));
-        root.setCenter(createCardsArea(nombreCartes));
-        root.setTop(titleArea(numeroJoueur, nomJoueur));
-    }
+        root.setPadding(new Insets(20));
+        root.setStyle("-fx-background-color: #F5E6D3;");
 
-    private VBox titleArea(int numeroJoueur, String nomJoueur){
-        VBox titleVBox = new VBox(40);
-        titleVBox.setAlignment(Pos.CENTER);
-        titleVBox.setPadding(new Insets(40));
+        // --- En-tête ---
+        VBox headerBox = new VBox(15);
+        headerBox.setAlignment(Pos.CENTER);
+        headerBox.setPadding(new Insets(20));
 
-        Label titleLabel = new Label("Joueur " +  numeroJoueur + "(" + nomJoueur + ")");
-        titleLabel.setStyle("-fx-font-size: 40px;");
-        titleLabel.setAlignment(Pos.CENTER);
-        titleLabel.setMaxWidth(Double.MAX_VALUE);
+        Label titleLabel = new Label("PHASE D'ÉCHANGE");
+        titleLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #5C4C38;");
 
-        Label explanationLabel = new Label("Clique sur la carte que tu veux échanger");
-        explanationLabel.setStyle("-fx-font-size: 25px;");
-        explanationLabel.setAlignment(Pos.CENTER);
-        explanationLabel.setMaxWidth(Double.MAX_VALUE);
+        Label instructionLabel = new Label(playerName + ", choisis une carte à donner à " + teammateName);
+        instructionLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #8B7355; -fx-font-weight: bold;");
 
-        titleVBox.getChildren().addAll(titleLabel, explanationLabel);
+        // Bouton pour révéler les cartes
+        revealButton = new Button("Voir mes cartes");
+        revealButton.setStyle("-fx-font-size: 16px; -fx-background-color: #8B7355; -fx-text-fill: white; -fx-padding: 8 20; -fx-background-radius: 5;");
+        revealButton.setOnAction(e -> toggleCardsVisibility());
 
-        return titleVBox;
-    }
+        headerBox.getChildren().addAll(titleLabel, instructionLabel, revealButton);
+        root.setTop(headerBox);
 
-    private GridPane createCardsArea(int nombreCartes){
-        GridPane cardsPane = new GridPane();
-        cardsPane.setAlignment(Pos.CENTER);
-        cardsPane.setHgap(10);
-        cardsPane.setVgap(10);
-        cardsPane.setPadding(new Insets(20));
+        // --- Main du joueur (Cartes) ---
+        FlowPane handPane = new FlowPane();
+        handPane.setAlignment(Pos.CENTER);
+        handPane.setHgap(20);
+        handPane.setVgap(20);
+        handPane.setPadding(new Insets(30));
 
-        //Charger l'image verso pour les afficher
-        Image imageVerso = null;
+        for (Card card : hand) {
+            ImageView cardView = createCardView(card);
+            cardViews.put(card, cardView);
+            
+            // Gestion de la sélection
+            cardView.setOnMouseClicked(e -> {
+                if (!areCardsVisible) return; // Impossible de sélectionner si caché
 
-        InputStream is = getClass().getResourceAsStream("/images/carte_verso.png");
-        if (is != null) {
-            imageVerso = new Image(is);
-        } else {
-            System.err.println("Fichier carte_verso.png non trouvé !");
+                selectCard(card, cardView, handPane);
+            });
+
+            handPane.getChildren().add(cardView);
         }
 
-        for (int i = 0; i < nombreCartes; i++) {
-            ImageView cardView = new ImageView(imageVerso);
+        root.setCenter(handPane);
 
-            // Définit la taille
-            cardView.setFitWidth(100);
-            cardView.setFitHeight(150);
-            cardView.setPreserveRatio(true);
+        // --- Bas (Bouton Valider) ---
+        VBox bottomBox = new VBox(20);
+        bottomBox.setAlignment(Pos.CENTER);
+        bottomBox.setPadding(new Insets(20));
 
-            int column = i % 5;
-            int line = (i / 5) + 1;
-            cardsPane.add(cardView, column, line);
-        }
+        confirmButton = new Button("Valider l'échange");
+        confirmButton.setStyle("-fx-font-size: 18px; -fx-background-color: #2E8B57; -fx-text-fill: white; -fx-padding: 10 30; -fx-background-radius: 8;");
+        confirmButton.setDisable(true); // Désactivé tant qu'aucune carte n'est choisie
 
-        validButton = new Button("Valider");
-        validButton.setVisible(true);
-        validButton.setOnMouseEntered(e -> validButton.setStyle("-fx-background-color: #5C4C38;"));
-        validButton.setOnMouseExited(e -> validButton.setStyle("-fx-background-color: #8B7355;"));
-        GridPane.setColumnSpan(validButton, 5);
-        GridPane.setHalignment(validButton, HPos.CENTER);
-        cardsPane.add(validButton, 0, 3);
+        confirmButton.setOnAction(e -> {
+            if (selectedCard != null && onCardSelected != null) {
+                onCardSelected.accept(selectedCard);
+            }
+        });
 
-        return cardsPane;
+        bottomBox.getChildren().add(confirmButton);
+        root.setBottom(bottomBox);
     }
 
-    public BorderPane getRoot(){return root;}
+    private void toggleCardsVisibility() {
+        areCardsVisible = !areCardsVisible;
+        revealButton.setText(areCardsVisible ? "Cacher mes cartes" : "Voir mes cartes");
+
+        for (Map.Entry<Card, ImageView> entry : cardViews.entrySet()) {
+            Card card = entry.getKey();
+            ImageView view = entry.getValue();
+            
+            if (areCardsVisible) {
+                // Afficher la face
+                try {
+                    InputStream is = getClass().getResourceAsStream(card.getImagePath());
+                    if (is != null) {
+                        view.setImage(new Image(is));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                // Afficher le dos
+                view.setImage(cardBackImage);
+                // Désélectionner si on cache
+                view.setEffect(null);
+                view.setScaleX(1.0);
+                view.setScaleY(1.0);
+            }
+        }
+        
+        if (!areCardsVisible) {
+            selectedCard = null;
+            confirmButton.setDisable(true);
+        }
+    }
+
+    private void selectCard(Card card, ImageView cardView, FlowPane parent) {
+        // Reset styles pour toutes les cartes
+        parent.getChildren().forEach(node -> {
+            node.setEffect(null);
+            node.setScaleX(1.0);
+            node.setScaleY(1.0);
+        });
+
+        // Appliquer le style de sélection
+        DropShadow borderGlow = new DropShadow();
+        borderGlow.setColor(Color.GOLD);
+        borderGlow.setWidth(40);
+        borderGlow.setHeight(40);
+        borderGlow.setSpread(0.6); // Rend l'ombre plus dense, comme une bordure
+        
+        cardView.setEffect(borderGlow);
+        cardView.setScaleX(1.2); // Agrandir
+        cardView.setScaleY(1.2);
+        
+        selectedCard = card;
+        confirmButton.setDisable(false);
+    }
+
+    private ImageView createCardView(Card card) {
+        ImageView cardView = new ImageView(cardBackImage); // Dos par défaut
+        
+        cardView.setFitWidth(100);
+        cardView.setFitHeight(150);
+        cardView.setPreserveRatio(true);
+        
+        // Effet de survol (seulement si visible)
+        cardView.setOnMouseEntered(e -> {
+            if (areCardsVisible && selectedCard != card) {
+                cardView.setScaleX(1.1);
+                cardView.setScaleY(1.1);
+            }
+        });
+        cardView.setOnMouseExited(e -> {
+            if (areCardsVisible && selectedCard != card) {
+                cardView.setScaleX(1.0);
+                cardView.setScaleY(1.0);
+            }
+        });
+
+        return cardView;
+    }
+
+    public void setOnCardSelected(Consumer<Card> onCardSelected) {
+        this.onCardSelected = onCardSelected;
+    }
+
+    public BorderPane getRoot() {
+        return root;
+    }
 }

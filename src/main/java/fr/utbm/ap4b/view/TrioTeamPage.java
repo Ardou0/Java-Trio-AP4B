@@ -7,12 +7,10 @@ import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -27,7 +25,7 @@ public class TrioTeamPage {
     private final Map<Integer, List<Card>> teamTrios;
     private BorderPane root;// Conteneur principal
     private Button endBtn;
-    private Map<Integer, List<StackPane>> teamSlots = new HashMap<>();
+    private Map<Integer, FlowPane> teamTrioContainers = new HashMap<>();
 
     public TrioTeamPage(int nombreEquipe, List<String> playerNames,
                         Map<Integer, List<Card>> teamTrios) {
@@ -42,7 +40,17 @@ public class TrioTeamPage {
         root = new BorderPane();
         root.setPadding(new Insets(10));
         root.setTop(createEndArea());
-        root.setCenter(createPrintArea(nombreEquipe));
+        
+        // Utiliser un ScrollPane pour permettre le défilement si beaucoup de trios
+        ScrollPane scrollPane = new ScrollPane(createPrintArea(nombreEquipe));
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        
+        // Centrer le contenu du ScrollPane
+        StackPane contentWrapper = new StackPane(scrollPane);
+        contentWrapper.setAlignment(Pos.CENTER);
+        
+        root.setCenter(contentWrapper);
     }
 
 
@@ -53,9 +61,9 @@ public class TrioTeamPage {
 
         endBtn = new Button("Retour");
         // Style du bouton de fermeture
-        endBtn.setStyle("-fx-background-color: #e74c3c;");
-        endBtn.setOnMouseEntered(e -> endBtn.setStyle("-fx-background-color: #c0392b;"));
-        endBtn.setOnMouseExited(e -> endBtn.setStyle("-fx-background-color: #e74c3c;"));
+        endBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+        endBtn.setOnMouseEntered(e -> endBtn.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold;"));
+        endBtn.setOnMouseExited(e -> endBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"));
 
         hBox.getChildren().add(endBtn);
 
@@ -74,63 +82,65 @@ public class TrioTeamPage {
 
         //Label d'affiche des caryes
         Label cardLabel = new Label("Trios de chaque équipe");
-        cardLabel.setStyle("-fx-font-size: 28px;");
+        cardLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #5C4C38;");
         cardLabel.setAlignment(Pos.CENTER);
         cardLabel.setMaxWidth(Double.MAX_VALUE);
         grid.add(cardLabel, 0, 0, 5, 1);
 
-        int colonnesParLigne = 3; // 3 équipes par ligne
+        int colonnesParLigne = 2; // Réduit à 2 pour laisser plus de place
 
         for (int equipe = 0; equipe < nbEquipe; equipe++) {
-            HBox box = createTeamBox(equipe + 1);
+            VBox box = createTeamBox(equipe + 1);
 
             int colonne = equipe % colonnesParLigne;
             int ligne = (equipe / colonnesParLigne) + 1;
 
             grid.add(box, colonne, ligne);
 
-            // Centre chaque HBox dans sa cellule
+            // Centre chaque VBox dans sa cellule
             GridPane.setHalignment(box, HPos.CENTER);
             GridPane.setValignment(box, VPos.CENTER);
+            
+            // Permettre à la colonne de grandir
+            ColumnConstraints colConst = new ColumnConstraints();
+            colConst.setPercentWidth(100.0 / colonnesParLigne);
+            grid.getColumnConstraints().add(colConst);
         }
 
         return grid;
     }
 
-    private HBox createTeamBox(int numeroEquipe) {
-        HBox box = new HBox(15);
+    private VBox createTeamBox(int numeroEquipe) {
+        VBox box = new VBox(10);
         box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(20, 10, 30, 10));
+        box.setPadding(new Insets(15));
         box.setStyle(
-                "-fx-background-radius: 10 10 0 0;" +
-                        "-fx-border-color: #0D1117;" +
-                        "-fx-border-width: 3;" +
-                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);");
+                "-fx-background-color: #E2CAA2;" +
+                "-fx-background-radius: 10;" +
+                "-fx-border-color: #0D1117;" +
+                "-fx-border-width: 2;" +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 2);");
 
         // Déterminer les noms des joueurs de l'équipe
         String teamLabelText = getTeamLabel(numeroEquipe);
 
         Label label = new Label(teamLabelText);
-        label.setStyle("-fx-font-size: 14px; -fx-min-width: 150px;");
+        label.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
         label.setWrapText(true);
+        label.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
-        // 3 slots pour les trios à droite du label
-        HBox slotsContainer = new HBox(10);
-        slotsContainer.setAlignment(Pos.CENTER);
+        // Conteneur extensible pour les trios
+        FlowPane triosContainer = new FlowPane();
+        triosContainer.setAlignment(Pos.CENTER);
+        triosContainer.setHgap(10);
+        triosContainer.setVgap(10);
+        triosContainer.setPrefWrapLength(300);
 
-        List<StackPane> slots = new ArrayList<>();
-
-        for (int i = 0; i < 3; i++) {
-            StackPane slot = createSlot();
-            slots.add(slot);
-            slotsContainer.getChildren().add(slot);
-        }
-
-        teamSlots.put(numeroEquipe, slots);
+        teamTrioContainers.put(numeroEquipe, triosContainer);
 
         displayTeamTrios(numeroEquipe);
 
-        box.getChildren().addAll(label, slotsContainer); // Ajouter au début
+        box.getChildren().addAll(label, triosContainer);
 
         return box;
     }
@@ -187,29 +197,23 @@ public class TrioTeamPage {
     private void displayTeamTrios(int teamId) {
         //Récupère la liste des cartes représentatives de l'équipe
         List<Card> trios = teamTrios.get(teamId);
+        FlowPane container = teamTrioContainers.get(teamId);
+        
+        if (container == null) return;
+        container.getChildren().clear();
 
-        //Vérifie s'il y a des trios à afficher
-        if (trios == null || trios.isEmpty()) {
-            System.out.println("DEBUG: Aucun trio pour l'équipe " + teamId);
-            return;
-        }
+        int nbTrios = (trios != null) ? trios.size() : 0;
+        int slotsToCreate = Math.max(3, nbTrios); // Au moins 3 slots
 
-        //Récupères les emplacements créés
-        List<StackPane> slots = teamSlots.get(teamId);
-        if (slots == null){
-            System.out.println("DEBUG: Aucun slot pour l'équipe " + teamId);
-            return;
-        }
-        System.out.println("Affichage " + trios.size() +
-                " trios pour l'équipe " + teamId);
+        // Affiche chaque carte dans un slot
+        for(int i = 0; i < slotsToCreate; i++) {
+            StackPane slot = createSlot();
+            
+            if (trios != null && i < trios.size()) {
+                displayCardInSlot(slot, trios.get(i));
+            }
 
-        // Affiche chaque carte dans un slot jusqu'au nombre minimum entre trios et slots disponibles
-        int trioToShow = Math.min(trios.size(), slots.size());
-        for(int i =  0; i < trioToShow; i++) {
-            Card card = trios.get(i); //Carte représentative du trio
-            StackPane slot = slots.get(i); //son emplacement
-
-            displayCardInSlot(slot, card);
+            container.getChildren().add(slot);
         }
     }
 
@@ -236,7 +240,7 @@ public class TrioTeamPage {
             }else{
                 // Fallback
                 Label valueLabel = new Label(String.valueOf(card.getValue()));
-                valueLabel.setStyle("-fx-font-size: 20px;");
+                valueLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
                 slot.getChildren().add(valueLabel);
             }
         } catch (Exception e){
