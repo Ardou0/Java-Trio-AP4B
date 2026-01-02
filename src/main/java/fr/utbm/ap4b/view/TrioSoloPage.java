@@ -79,14 +79,26 @@ public class TrioSoloPage {
         grid.setVgap(10);
         grid.setAlignment(Pos.CENTER);
 
-        //Label d'affiche des caryes
+        //Label d'affiche des cartes
         Label cardLabel = new Label("Trios de chaque joueur");
-        cardLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #5C4C38;");
+        cardLabel.setStyle("-fx-font-size: 28px; -fx-text-fill: #5C4C38;");
         cardLabel.setAlignment(Pos.CENTER);
         cardLabel.setMaxWidth(Double.MAX_VALUE);
         grid.add(cardLabel, 0, 0, 5, 1);
 
         int colonnesParLigne = 2; // Réduit à 2 pour laisser plus de place aux trios extensibles
+
+        // Centrer le label dans sa cellule
+        GridPane.setHalignment(cardLabel, HPos.CENTER);
+        GridPane.setColumnSpan(cardLabel, colonnesParLigne);
+
+        // Défini les contraintes de colonne une seule fois
+        for (int i = 0; i < colonnesParLigne; i++) {
+            ColumnConstraints colConst = new ColumnConstraints();
+            colConst.setPercentWidth(100.0 / colonnesParLigne);
+            colConst.setHalignment(HPos.CENTER); // Centre le contenu dans la colonne
+            grid.getColumnConstraints().add(colConst);
+        }
 
         for (int joueur = 0; joueur < nbJoueurs; joueur++) {
             VBox box = createPlayerBox(joueur + 1);
@@ -99,11 +111,6 @@ public class TrioSoloPage {
             // Centrer chaque VBox dans sa cellule
             GridPane.setHalignment(box, HPos.CENTER);
             GridPane.setValignment(box, VPos.CENTER);
-            
-            // Permettre à la colonne de grandir
-            ColumnConstraints colConst = new ColumnConstraints();
-            colConst.setPercentWidth(100.0 / colonnesParLigne);
-            grid.getColumnConstraints().add(colConst);
         }
 
         return grid;

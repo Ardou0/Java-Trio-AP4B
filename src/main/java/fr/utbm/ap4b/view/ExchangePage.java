@@ -57,14 +57,14 @@ public class ExchangePage {
         headerBox.setPadding(new Insets(20));
 
         Label titleLabel = new Label("PHASE D'ÉCHANGE");
-        titleLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #5C4C38;");
+        titleLabel.setStyle("-fx-font-size: 32px; -fx-text-fill: #5C4C38;");
 
         Label instructionLabel = new Label(playerName + ", choisis une carte à donner à " + teammateName);
-        instructionLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #8B7355; -fx-font-weight: bold;");
+        instructionLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #8B7355;");
 
         // Bouton pour révéler les cartes
         revealButton = new Button("Voir mes cartes");
-        revealButton.setStyle("-fx-font-size: 16px; -fx-background-color: #8B7355; -fx-text-fill: white; -fx-padding: 8 20; -fx-background-radius: 5;");
+        revealButton.setStyle("-fx-font-size: 16px;");
         revealButton.setOnAction(e -> toggleCardsVisibility());
 
         headerBox.getChildren().addAll(titleLabel, instructionLabel, revealButton);
@@ -99,7 +99,7 @@ public class ExchangePage {
         bottomBox.setPadding(new Insets(20));
 
         confirmButton = new Button("Valider l'échange");
-        confirmButton.setStyle("-fx-font-size: 18px; -fx-background-color: #2E8B57; -fx-text-fill: white; -fx-padding: 10 30; -fx-background-radius: 8;");
+        confirmButton.setStyle("-fx-font-size: 18px; -fx-background-color: #2E8B57;");
         confirmButton.setDisable(true); // Désactivé tant qu'aucune carte n'est choisie
 
         confirmButton.setOnAction(e -> {
