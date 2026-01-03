@@ -10,9 +10,14 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
+/**
+ * Page affichant les règles du jeu.
+ * Accessible depuis le menu principal et depuis le jeu.
+ * Présente les règles en 3 sections distinctes : Comment jouer, Victoire, Mode Équipe.
+ */
 public class RulesPage {
 
-    private Button endBtn;  // Bouton de contrôle
+    private Button endBtn;  // Bouton de retour
     private BorderPane root;// Conteneur principal
     private HBox hBox;
 
@@ -20,7 +25,9 @@ public class RulesPage {
         showScreen();
     }
 
-    //Affiche la page javaFX
+    /**
+     * Initialise l'interface graphique.
+     */
     private void showScreen(){
         root = new BorderPane();
         root.setPadding(new Insets(10));
@@ -28,6 +35,9 @@ public class RulesPage {
         root.setTop(createEndArea());
     }
 
+    /**
+     * Crée la grille contenant les blocs de texte des règles.
+     */
     private GridPane createRulesArea(){
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(10));
@@ -70,20 +80,16 @@ public class RulesPage {
                 "    • Communication interdite pour préparer l'échange !";
 
 
-        // Création des cellules avec du style
-        // Cellule 1 (Gauche)
+        // Création des cellules avec du style et des couleurs différentes
         VBox cell1 = createRuleCell(title1, content1, "#E3F2FD"); // Bleu très clair
-
-        // Cellule 2 (Droite Haut)
         VBox cell2 = createRuleCell(title2, content2, "#E8F5E9"); // Vert très clair
-
-        // Cellule 3 (Droite Bas)
         VBox cell3 = createRuleCell(title3, content3, "#FFF3E0"); // Orange très clair
 
-        // La cellule 1 occupe la colonne 0, ligne 0, s'étend sur 1 colonne et 2 lignes
+        // Disposition dans la grille
+        // La cellule 1 occupe la colonne 0, ligne 0, s'étend sur 1 colonne et 2 lignes (Toute la gauche)
         grid.add(cell1, 0, 0, 1, 2);
 
-        // Les deux autres occupent la colonne 1 sur une seule ligne chacune
+        // Les deux autres occupent la colonne 1 sur une seule ligne chacune (Droite Haut et Droite Bas)
         grid.add(cell2, 1, 0);
         grid.add(cell3, 1, 1);
 
@@ -110,7 +116,6 @@ public class RulesPage {
         hBox.setPadding(new Insets(10));
 
         endBtn = new Button("Retour");
-        // Style du bouton de fermeture
         endBtn.setStyle("-fx-background-color: #e74c3c;");
         endBtn.setOnMouseEntered(e -> endBtn.setStyle("-fx-background-color: #c0392b;"));
         endBtn.setOnMouseExited(e -> endBtn.setStyle("-fx-background-color: #e74c3c;"));
@@ -120,8 +125,11 @@ public class RulesPage {
         return hBox;
     }
 
+    /**
+     * Crée une cellule de règle stylisée.
+     */
     private VBox createRuleCell(String title, String content, String bgColor) {
-        VBox box = new VBox(10); // Espacement vertical de 10
+        VBox box = new VBox(10);
         box.setPadding(new Insets(20));
         box.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 10;" +
                 " -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0); " +
@@ -132,7 +140,7 @@ public class RulesPage {
 
         // Titre
         Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("System", FontWeight.BOLD, 20)); // Titre un peu plus gros
+        titleLabel.setFont(Font.font("System", FontWeight.BOLD, 20));
         titleLabel.setWrapText(true);
         titleLabel.setTextAlignment(TextAlignment.LEFT);
         titleLabel.setStyle("-fx-text-fill: #2c3e50;");
@@ -141,18 +149,16 @@ public class RulesPage {
         Label contentLabel = new Label(content);
         contentLabel.setFont(Font.font("System", 14));
         contentLabel.setWrapText(true);
-        // Alignement gauche (plus lisible que justifié)
         contentLabel.setTextAlignment(TextAlignment.LEFT);
         contentLabel.setStyle("-fx-text-fill: #34495e;");
 
-        // ScrollPane pour garantir la lisibilité
+        // ScrollPane pour garantir la lisibilité si le texte est trop long
         ScrollPane scroll = new ScrollPane(contentLabel);
         scroll.setFitToWidth(true);
         scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
-        // On force le ScrollPane à grandir
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         box.getChildren().addAll(titleLabel, scroll);

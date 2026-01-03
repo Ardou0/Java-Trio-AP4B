@@ -19,12 +19,23 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Vue affichée à la fin de la partie.
+ * Présente le vainqueur, la raison de la victoire et un récapitulatif des scores (trios) de tous les participants.
+ */
 public class EndGamePage {
 
     private BorderPane root;
     private Button replayButton;
     private Button quitButton;
 
+    /**
+     * Constructeur de la page de fin.
+     * @param winner L'acteur (Joueur ou IA) qui a gagné.
+     * @param isTeamMode Indique si le jeu était en mode équipe.
+     * @param winReason La raison textuelle de la victoire (ex: "Trio de 7").
+     * @param allScores Map contenant les trios réalisés par chaque joueur/équipe.
+     */
     public EndGamePage(Actor winner, boolean isTeamMode, String winReason, Map<String, List<List<Card>>> allScores) {
         createView(winner, isTeamMode, winReason, allScores);
     }
@@ -32,7 +43,6 @@ public class EndGamePage {
     private void createView(Actor winner, boolean isTeamMode, String winReason, Map<String, List<List<Card>>> allScores) {
         root = new BorderPane();
         root.setPadding(new Insets(20));
-        // Fond beige global
         root.setStyle("-fx-background-color: #F5E6D3;");
 
         // --- En-tête (Vainqueur) ---
@@ -47,7 +57,6 @@ public class EndGamePage {
         if (winner != null) {
             if (isTeamMode && winner instanceof JoueurEquipe) {
                 JoueurEquipe teamPlayer = (JoueurEquipe) winner;
-                // Format demandé : "Joueur 1 et Joueur 2 ont gagné"
                 winnerText = teamPlayer.getName() + " et " + teamPlayer.getTeammate().getName() + " ont gagné !";
             } else {
                 winnerText = winner.getName() + " a gagné !";
@@ -88,12 +97,11 @@ public class EndGamePage {
             );
             participantBox.setMaxWidth(800);
 
-            // Nom et nombre de trios
             Label nameLabel = new Label(participantName + " : " + trios.size() + " trio(s)");
             nameLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #0D1117;");
             participantBox.getChildren().add(nameLabel);
 
-            // Zone des trios (FlowPane pour que ça passe à la ligne si beaucoup de trios)
+            // Zone des trios (FlowPane pour affichage flexible)
             FlowPane triosFlow = new FlowPane();
             triosFlow.setHgap(20);
             triosFlow.setVgap(10);
@@ -106,8 +114,8 @@ public class EndGamePage {
             } else {
                 for (List<Card> trio : trios) {
                     if (!trio.isEmpty()) {
-                        // Créer un conteneur visuel pour UN trio (3 cartes collées)
-                        HBox trioBox = new HBox(2); // Très peu d'espace entre les cartes d'un même trio
+                        // Affiche les 3 cartes du trio côte à côte
+                        HBox trioBox = new HBox(2);
                         trioBox.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 5, 0, 2, 2);");
                         
                         for (Card card : trio) {
@@ -123,14 +131,12 @@ public class EndGamePage {
             scoresContainer.getChildren().add(participantBox);
         }
 
-        // ScrollPane pour faire défiler si beaucoup de joueurs
+        // ScrollPane pour gérer le défilement si la liste est longue
         ScrollPane scrollPane = new ScrollPane(scoresContainer);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background: #F5E6D3; -fx-background-color: #F5E6D3;");
-        // Astuce pour enlever la bordure du ScrollPane
         scrollPane.getStyleClass().add("edge-to-edge"); 
         
-        // Centrer le contenu du ScrollPane
         StackPane contentWrapper = new StackPane(scoresContainer);
         contentWrapper.setStyle("-fx-background-color: #F5E6D3;");
         scrollPane.setContent(contentWrapper);
@@ -160,7 +166,6 @@ public class EndGamePage {
             System.err.println("Erreur chargement image: " + card.getImagePath());
         }
         
-        // Taille réduite pour l'affichage des scores
         cardView.setFitWidth(60);
         cardView.setFitHeight(90);
         cardView.setPreserveRatio(true);
@@ -176,8 +181,6 @@ public class EndGamePage {
         btn.setStyle(baseStyle);
         btn.setOnMouseEntered(e -> btn.setStyle(hoverStyle));
         btn.setOnMouseExited(e -> btn.setStyle(baseStyle));
-        
-        // Ombre sur le bouton
         btn.setEffect(new DropShadow(5, Color.rgb(0,0,0,0.3)));
         
         return btn;

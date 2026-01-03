@@ -1,10 +1,6 @@
 package fr.utbm.ap4b.controller;
 
-import fr.utbm.ap4b.model.Actor;
-import fr.utbm.ap4b.model.Card;
-import fr.utbm.ap4b.model.CompletedTrios;
-import fr.utbm.ap4b.model.Game;
-import fr.utbm.ap4b.model.JoueurEquipe;
+import fr.utbm.ap4b.model.*;
 import fr.utbm.ap4b.view.EndGamePage;
 import javafx.stage.Stage;
 
@@ -13,6 +9,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Contrôleur gérant la fin de la partie.
+ * Il est responsable de calculer les scores finaux, de déterminer la raison de la victoire
+ * et d'afficher la page de résultats (EndGamePage).
+ */
 public class EndGameController {
 
     private final Stage primaryStage;
@@ -23,17 +24,23 @@ public class EndGameController {
         this.gameModel = gameModel;
     }
 
+    /**
+     * Affiche l'écran de fin de partie.
+     * Récupère toutes les informations nécessaires (gagnant, scores, raison) depuis le modèle
+     * et configure la vue.
+     */
     public void showEndGame() {
         Actor winner = gameModel.getWinner();
         boolean isTeamMode = gameModel.isTeamMode();
 
-        // Déterminer la raison de la victoire
-        String winReason = "3 Trios";
+        // Déterminer la raison textuelle de la victoire pour l'affichage
+        String winReason = "3 Trios"; // Raison par défaut (Mode Normal)
 
         if(gameModel.isPiquant()) {
             winReason = "2 Trios liés";
         }
 
+        // Vérification spécifique pour la victoire "Trio de 7"
         if (winner != null) {
             CompletedTrios completedTrios = gameModel.getCompletedTrios();
             List<List<Card>> winnerTrios = completedTrios.getTriosForPlayer(winner.getPlayerIndex());
@@ -47,14 +54,19 @@ public class EndGameController {
             }
         }
 
-        // Construire la map des scores
+        // Construire la map des scores pour l'affichage détaillé
         Map<String, List<List<Card>>> allScores = buildScoresMap(isTeamMode);
+
+        // --- DEBUG CONSOLE ---
+        printDebugReport(winner, winReason, allScores);
+        // ---------------------
 
         // Afficher la page de fin
         EndGamePage endGameView = new EndGamePage(winner, isTeamMode, winReason, allScores);
         primaryStage.getScene().setRoot(endGameView.getRoot());
         primaryStage.setTitle("Fin de la partie");
 
+        // Configuration des boutons Rejouer / Quitter
         endGameView.getReplayButton().setOnAction(e -> {
             new MenuController(primaryStage).show();
         });
@@ -64,6 +76,57 @@ public class EndGameController {
         });
     }
 
+    /**
+     * Affiche un rapport complet de fin de partie dans la console pour le débogage.
+     */
+    private void printDebugReport(Actor winner, String winReason, Map<String, List<List<Card>>> allScores) {
+        System.out.println("==================================================");
+        System.out.println("              RAPPORT DE FIN DE PARTIE            ");
+        System.out.println("==================================================");
+        
+        if (winner != null) {
+            if(winner instanceof JoueurEquipe) {
+                System.out.println("ÉQUIPE GAGNANTE : " + ((JoueurEquipe) winner).getName() + " et " + ((JoueurEquipe) winner).getTeammate().getName());
+            }
+            else {
+                System.out.println("VAINQUEUR : " + winner.getName());
+            }
+            System.out.println("RAISON    : " + winReason);
+        } else {
+            System.out.println("RÉSULTAT  : Match Nul / Pas de vainqueur");
+        }
+        
+        System.out.println("--------------------------------------------------");
+        System.out.println("DÉTAIL DES SCORES :");
+        
+        for (Map.Entry<String, List<List<Card>>> entry : allScores.entrySet()) {
+            String participant = entry.getKey();
+            List<List<Card>> trios = entry.getValue();
+            
+            System.out.print(String.format("%-20s : %d trio(s) -> ", participant, trios.size()));
+            
+            if (trios.isEmpty()) {
+                System.out.println("Aucun");
+            } else {
+                List<String> trioValues = new ArrayList<>();
+                for (List<Card> trio : trios) {
+                    if (!trio.isEmpty()) {
+                        trioValues.add("[" + trio.get(0).getValue() + "]");
+                    }
+                }
+                System.out.println(String.join(", ", trioValues));
+            }
+        }
+        System.out.println("==================================================");
+    }
+
+    /**
+     * Construit une structure de données contenant les scores de tous les joueurs ou équipes.
+     * Cette structure est utilisée par la vue pour afficher le tableau récapitulatif.
+     *
+     * @param isTeamMode Vrai si les scores doivent être agrégés par équipe.
+     * @return Une Map ordonnée (Nom -> Liste de Trios).
+     */
     private Map<String, List<List<Card>>> buildScoresMap(boolean isTeamMode) {
         Map<String, List<List<Card>>> allScores = new LinkedHashMap<>();
         if (isTeamMode) {

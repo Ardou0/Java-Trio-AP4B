@@ -14,6 +14,11 @@ import javafx.scene.layout.HBox;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Page de saisie des noms des joueurs.
+ * S'adapte dynamiquement au nombre de joueurs sélectionné précédemment.
+ * Affiche également une aide pour la répartition des équipes.
+ */
 public class PlayerPage {
     private final int nbPlayers;
     private BorderPane root;
@@ -28,7 +33,9 @@ public class PlayerPage {
         showScreen();
     }
 
-    //Affiche la page javaFX
+    /**
+     * Initialise l'interface graphique.
+     */
     private void showScreen(){
         root = new BorderPane();
         root.setPadding(new Insets(10));
@@ -37,6 +44,10 @@ public class PlayerPage {
         root.setBottom(nextArea());
     }
 
+    /**
+     * Crée la grille de saisie des noms.
+     * @param nbPlayers Le nombre de champs à générer.
+     */
     private GridPane createPlayerArea(int nbPlayers){
         GridPane playerPane = new GridPane();
         playerPane.setAlignment(Pos.CENTER);
@@ -50,6 +61,7 @@ public class PlayerPage {
         GridPane.setHalignment(titleLabel, HPos.CENTER);
         GridPane.setMargin(titleLabel, new Insets(0, 0, 40, 0));
 
+        // Génération dynamique des champs de texte
         for(int i = 0; i < nbPlayers ; i++){
 
             HBox hBox = new HBox(5);
@@ -63,17 +75,19 @@ public class PlayerPage {
             playerNameField.setPrefWidth(150);
             playerNameField.setMaxWidth(150);
 
-            // Ajoute le TextField à la liste
+            // Ajoute le TextField à la liste pour récupération ultérieure
             playerNameFields.add(playerNameField);
 
             hBox.getChildren().addAll(playerName,  playerNameField);
 
+            // Disposition en 2 colonnes
             int column = i % 2;
             int line = (i / 2) + 1;
 
             playerPane.add(hBox, column, line);
         }
 
+        // Zone d'aide pour les équipes
         HBox checkBoxContainer = new HBox(10);
         checkBoxContainer.setAlignment(Pos.CENTER);
         teamExampleCheckBox = new CheckBox("Voir comment sont répartis les joueurs en équipe");
@@ -137,15 +151,13 @@ public class PlayerPage {
     }
 
     public Button getPreviousButton() {return previousButton;}
-
     public Button getNextButton() {return nextButton;}
-
     public CheckBox getExampleCheck() {return teamExampleCheckBox;}
-
     public Label getExampleLabel() {return teamExampleLabel;}
 
     /**
-    * Renvoie le nom des joueurs de la liste des labels
+    * Récupère la liste des noms saisis dans les champs de texte.
+    * @return Une liste de chaînes de caractères.
     */
     public List<String> getPlayerNames() {
         List<String> names = new ArrayList<>();

@@ -5,6 +5,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Classe principale gérant la logique et l'état d'une partie de Trio.
+ * Elle agit comme le "Cerveau" du jeu, validant les règles, gérant les tours
+ * et stockant l'état global (joueurs, pioche, cartes révélées).
+ */
 public class Game {
 
     public enum GamePhase {
@@ -31,6 +36,16 @@ public class Game {
     private Set<Actor> playersWhoHaveSwapped;
 
 
+    /**
+     * Constructeur de la partie.
+     * Initialise les paramètres de base et valide la configuration (nombre de joueurs, mode de jeu).
+     *
+     * @param playerNames Liste des noms des joueurs humains.
+     * @param numAI Nombre d'intelligences artificielles à ajouter.
+     * @param isTeamMode Vrai si le mode équipe est activé.
+     * @param isPiquant Vrai si le mode "Piquant" est activé.
+     * @throws IllegalArgumentException Si la configuration des joueurs est invalide.
+     */
     public Game(List<String> playerNames, int numAI, boolean isTeamMode, boolean isPiquant) {
         if (playerNames == null) {
             throw new IllegalArgumentException("La liste des noms de joueurs ne peut pas être nulle.");
@@ -40,6 +55,7 @@ public class Game {
         this.numAI = numAI;
         this.numPlayers = playerNames.size() + numAI;
 
+        // Validation des règles de nombre de joueurs
         if (numPlayers > 6) {
             throw new IllegalArgumentException("Le nombre total de joueurs (humains + IA) ne peut pas dépasser 6.");
         }
@@ -59,10 +75,10 @@ public class Game {
         this.cardsInPlayThisTurn = new ArrayList<>();
         this.isGameStarted = false;
 
-        // Initialize swap-related fields
+        // Initialisation des champs liés aux échanges (Swap)
         this.playersAllowedToSwap = new HashSet<>();
         this.playersWhoHaveSwapped = new HashSet<>();
-        this.currentPhase = GamePhase.PLAYING; // Default phase
+        this.currentPhase = GamePhase.PLAYING; // Phase par défaut
 
         initializePlayers();
     }
@@ -102,6 +118,10 @@ public class Game {
         return playersAllowedToSwap;
     }
     
+    /**
+     * Calcule l'ensemble des joueurs qui sont autorisés à échanger mais ne l'ont pas encore fait.
+     * @return Un Set contenant les acteurs en attente d'échange.
+     */
     public Set<Actor> getPlayersWhoHaveNotSwapped() {
         Set<Actor> pending = new HashSet<>(playersAllowedToSwap);
         pending.removeAll(playersWhoHaveSwapped);
@@ -112,6 +132,11 @@ public class Game {
         return isGameStarted;
     }
 
+    /**
+     * Vérifie si la partie est terminée en interrogeant le gestionnaire de trios (CompletedTrios).
+     * Met à jour le gagnant si la partie est finie.
+     * @return Vrai si un gagnant a été déterminé.
+     */
     public boolean isGameEnded() {
         this.winner = completedTrios.getWinner(this);
         return this.winner != null;
@@ -125,10 +150,19 @@ public class Game {
         return isTeamMode;
     }
 
+    /**
+     * Passe la main au joueur suivant dans la liste de manière cyclique.
+     */
     public void nextPlayer() {
         this.playerTurn = (this.playerTurn + 1) % this.players.size();
     }
 
+    /**
+     * Tente de révéler une carte spécifique depuis la pioche.
+     * Vérifie d'abord si l'action est autorisée.
+     * 
+     * @param card La carte à révéler.
+     */
     public void revealCardFromDrawPile(Card card) {
         if (canRevealCard() && !cardsInPlayThisTurn.contains(card)) {
             this.revealedCards.add(CardLocation.fromDrawPile(card, this.drawPile));
@@ -136,11 +170,21 @@ public class Game {
         }
     }
 
+    /**
+     * Vérifie si le joueur courant a le droit de révéler une nouvelle carte.
+     * Les règles sont :
+     * 1. On doit être en phase de jeu (pas d'échange).
+     * 2. On ne peut pas révéler plus de 3 cartes.
+     * 3. Si 2 cartes sont déjà révélées, elles doivent être identiques pour continuer.
+     * 
+     * @return Vrai si la révélation est autorisée.
+     */
     public boolean canRevealCard() {
-        if (currentPhase != GamePhase.PLAYING) return false; // Can't reveal during swap
+        if (currentPhase != GamePhase.PLAYING) return false; // Impossible de jouer pendant un échange
         if (revealedCards.size() >= 3) {
             return false;
         }
+        // Règle critique : Si les deux premières cartes sont différentes, le tour s'arrête.
         if (revealedCards.size() == 2) {
             Card card1 = revealedCards.get(0).getCard();
             Card card2 = revealedCards.get(1).getCard();
@@ -151,10 +195,17 @@ public class Game {
         return true;
     }
 
+    /**
+     * Traite un trio validé.
+     * Retire les cartes concernées de leurs emplacements respectifs (mains des joueurs ou pioche).
+     * 
+     * @param trio La liste des 3 cartes formant le trio.
+     */
     public void processTrio(List<Card> trio) {
         if (trio == null || trio.size() != 3) return;
 
         for (Card card : trio) {
+            // Trouve l'emplacement de la carte révélée et la retire de la source (Main ou Pioche)
             revealedCards.stream()
                     .filter(loc -> loc.getCard().equals(card))
                     .findFirst()
@@ -164,6 +215,10 @@ public class Game {
         clearRevealedCards();
     }
 
+    /**
+     * Révèle la plus grande carte de la main d'un joueur cible.
+     * @param playerIndex L'index du joueur ciblé.
+     */
     public void revealLargestCardFromPlayer(int playerIndex) {
         Actor player = players.get(playerIndex);
         Card card = player.getHand().getLargestCard();
@@ -172,6 +227,10 @@ public class Game {
         }
     }
 
+    /**
+     * Révèle la plus petite carte de la main d'un joueur cible.
+     * @param playerIndex L'index du joueur ciblé.
+     */
     public void revealSmallestCardFromPlayer(int playerIndex) {
         Actor player = players.get(playerIndex);
         Card card = player.getHand().getSmallestCard();
@@ -180,8 +239,15 @@ public class Game {
         }
     }
 
+    /**
+     * Démarre officiellement la partie.
+     * Distribue les cartes aux joueurs et détermine la première phase de jeu
+     * (Phase d'échange si mode équipe, sinon phase de jeu normale).
+     */
     public void startGame() {
         if (isGameStarted) return;
+        
+        // Distribution des cartes
         List<List<Card>> hands = drawPile.dealHands(numPlayers, isTeamMode);
         for (int i = 0; i < numPlayers; i++) {
             players.get(i).setupHand(hands.get(i));
@@ -197,52 +263,70 @@ public class Game {
         }
     }
 
+    /**
+     * Gère l'échange de cartes entre deux coéquipiers.
+     * Cette méthode contient toute la logique de validation de l'échange (bonnes cartes, bons joueurs, bonne phase).
+     *
+     * @param initiatingPlayerIndex L'index du joueur qui initie l'échange.
+     * @param cardToGive La carte donnée par l'initiateur.
+     * @param cardToReceive La carte reçue du coéquipier.
+     * @return Vrai si l'échange a réussi, Faux sinon.
+     */
     public boolean exchangeCards(int initiatingPlayerIndex, Card cardToGive, Card cardToReceive) {
+        // Vérifications préliminaires sur la phase et le mode
         if (currentPhase == GamePhase.PLAYING || !isTeamMode) {
-            return false; // Not a swap phase or not team mode
+            return false; 
         }
 
         Actor initiator = players.get(initiatingPlayerIndex);
+        // Vérifie si le joueur a déjà échangé ou n'est pas un joueur d'équipe
         if (!(initiator instanceof JoueurEquipe) || playersWhoHaveSwapped.contains(initiator)) {
-            return false; // Not a team player or already swapped this phase
+            return false; 
         }
 
         JoueurEquipe teamInitiator = (JoueurEquipe) initiator;
         JoueurEquipe teammate = teamInitiator.getTeammate();
 
         if (teammate == null || !playersAllowedToSwap.contains(initiator)) {
-            return false; // No teammate or this team is not allowed to swap now
+            return false; // Pas de coéquipier ou équipe non autorisée à échanger
         }
 
-        // Verify cards exist in the correct hands
+        // Vérifie que les joueurs possèdent bien les cartes qu'ils prétendent échanger
         if (!teamInitiator.getHand().getCards().contains(cardToGive) || !teammate.getHand().getCards().contains(cardToReceive)) {
             return false;
         }
 
-        // Perform the swap
+        // Exécution de l'échange physique des cartes
         teamInitiator.getHand().removeCard(cardToGive);
         teamInitiator.getHand().addCard(cardToReceive);
         teammate.getHand().removeCard(cardToReceive);
         teammate.getHand().addCard(cardToGive);
 
-        // Mark both players as having swapped for this phase
+        // Marque les joueurs comme ayant effectué leur action pour cette phase
         playersWhoHaveSwapped.add(teamInitiator);
         playersWhoHaveSwapped.add(teammate);
 
         System.out.println(teamInitiator.getName() + " et " + teammate.getName() + " ont échangé des cartes.");
 
-        // Check if the current swap phase is over
+        // Vérifie si tous les échanges sont terminés pour changer de phase
         checkAndEndSwapPhase();
 
         return true;
     }
 
 
+    /**
+     * Gère la fin du tour d'un joueur.
+     * Vérifie si un trio a été formé, attribue les points, et gère les transitions de phase (ex: échange après trio).
+     * 
+     * @return Vrai si le joueur rejoue (car il a fait un trio), Faux si c'est au tour du joueur suivant.
+     */
     public boolean nextTurn() {
         if (this.isGameEnded() || !this.isGameStarted) {
             return false;
         }
 
+        // Vérification de la présence d'un trio dans les cartes révélées
         boolean isTrio = false;
         if (revealedCards.size() == 3) {
             Card card1 = revealedCards.get(0).getCard();
@@ -259,9 +343,12 @@ public class Game {
             for (CardLocation loc : revealedCards) {
                 trio.add(loc.getCard());
             }
+            
+            // Enregistrement du trio et nettoyage du plateau
             completedTrios.addTrio(scoringPlayer.getPlayerIndex(), trio);
-            processTrio(trio); // This clears revealedCards and cardsInPlayThisTurn
+            processTrio(trio); 
 
+            // Gestion spécifique au mode équipe : Phase d'échange punitive pour les adversaires
             if (isTeamMode) {
                 System.out.println("Un trio a été formé ! Phase d'échange pour les équipes adverses.");
                 this.currentPhase = GamePhase.POST_TRIO_SWAP;
@@ -269,27 +356,34 @@ public class Game {
                 this.playersAllowedToSwap.clear();
 
                 JoueurEquipe scoringTeamPlayer = (JoueurEquipe) scoringPlayer;
+                // Autorise toutes les équipes SAUF celle qui vient de marquer
                 for (Actor player : players) {
                     if (player != scoringTeamPlayer && player != scoringTeamPlayer.getTeammate()) {
                         playersAllowedToSwap.add(player);
                     }
                 }
-                // If there are no other teams to swap, end the phase immediately.
+                // S'il n'y a personne pour échanger (ex: partie à 2 équipes), on passe
                 if (playersAllowedToSwap.isEmpty()) {
                     checkAndEndSwapPhase();
                 }
             }
+            
+            // Après un trio, fin du tour et passage au joueur suivant
             nextPlayer();
             isGameEnded();
-            return true; // Player plays again
+            return true; 
         } else {
-            // No trio, turn is over for the next player
+            // Pas de trio, fin du tour standard
             clearRevealedCards();
             nextPlayer();
             return false;
         }
     }
 
+    /**
+     * Vérifie si la phase d'échange est terminée (tous les joueurs autorisés ont échangé).
+     * Si oui, bascule le jeu en phase PLAYING.
+     */
     private void checkAndEndSwapPhase() {
         if (playersWhoHaveSwapped.size() >= playersAllowedToSwap.size()) {
             if (currentPhase == GamePhase.INITIAL_SWAP) {
@@ -303,14 +397,20 @@ public class Game {
         }
     }
 
+    /**
+     * Réinitialise l'état des cartes révélées (les cache visuellement et vide la liste).
+     */
     private void clearRevealedCards() {
         for (CardLocation card : revealedCards) {
-            card.getCard().toggleIterable();
+            card.getCard().toggleIterable(); // Remet l'état "iterable" (probablement pour l'affichage)
         }
         this.revealedCards.clear();
         this.cardsInPlayThisTurn.clear();
     }
 
+    /**
+     * Méthode utilitaire interne pour révéler une carte d'un joueur.
+     */
     private void revealCardFromPlayer(Card card, Actor player) {
         if (canRevealCard() && !cardsInPlayThisTurn.contains(card)) {
             this.revealedCards.add(CardLocation.fromPlayer(card, player));
@@ -318,6 +418,9 @@ public class Game {
         }
     }
 
+    /**
+     * Initialise la liste des joueurs et configure les équipes si nécessaire.
+     */
     private void initializePlayers() {
         this.players = new ArrayList<>();
         if (isTeamMode) {
@@ -326,6 +429,7 @@ public class Game {
                 players.add(new JoueurEquipe(name, playerIndex++));
             }
 
+            // Appariement des coéquipiers (Joueur i avec Joueur i + offset)
             int teamMateOffset = players.size() / 2;
             for (int i = 0; i < teamMateOffset; i++) {
                 JoueurEquipe p1 = (JoueurEquipe) players.get(i);

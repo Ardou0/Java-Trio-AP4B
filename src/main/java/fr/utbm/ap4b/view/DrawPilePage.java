@@ -16,21 +16,31 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * Vue représentant la pioche (ou le "centre" de la table).
+ * Permet au joueur de choisir une carte face cachée parmi celles disponibles.
+ */
 public class DrawPilePage {
 
     private BorderPane root;// Conteneur principal
     private Button endBtn;
-    private Consumer<Card> cardSelectionHandler; //Permet de communiquer avec le contrôleur
+    private Consumer<Card> cardSelectionHandler; // Callback pour notifier le contrôleur du choix
     private List<Card> availableCards;
-    private List<Card> cards;
     private Card selectedCard = null;
     private Button selectButton = null;
 
+    /**
+     * Constructeur de la page de pioche.
+     * @param availableCards La liste des cartes disponibles dans la pioche.
+     */
     public DrawPilePage(List<Card> availableCards) {
         this.availableCards = availableCards;
         showScreen();
     }
 
+    /**
+     * Initialise l'interface graphique.
+     */
     private void showScreen(){
         root = new BorderPane();
         root.setPadding(new Insets(10));
@@ -38,12 +48,14 @@ public class DrawPilePage {
         root.setTop(createEndArea());
     }
 
+    /**
+     * Crée la zone centrale affichant les cartes face cachée.
+     */
     private VBox createDrawPileArea(){
         VBox mainContainer = new VBox(20);
         mainContainer.setAlignment(Pos.CENTER);
         mainContainer.setPadding(new Insets(10));
 
-        //Label d'affiche des cartes
         Label drawPileLabel = new Label("Pioche");
         drawPileLabel.setStyle("-fx-font-size: 40px;");
         drawPileLabel.setAlignment(Pos.CENTER);
@@ -52,10 +64,10 @@ public class DrawPilePage {
         explanationLabel.setStyle("-fx-font-size: 25px;");
         explanationLabel.setAlignment(Pos.CENTER);
 
-        //Grille pour les cartes verso
+        // Grille contenant les cartes (dos visible)
         GridPane drawPilePane = createCardsGrid();
 
-        //Zone pour le bouton de selection (initialement vide)
+        // Zone pour le bouton de validation (apparaît après sélection)
         HBox selectionZone = new HBox();
         selectionZone.setAlignment(Pos.CENTER);
         selectionZone.setPadding(new Insets(20,0,0,0));
@@ -65,6 +77,9 @@ public class DrawPilePage {
         return mainContainer;
     }
 
+    /**
+     * Génère la grille de cartes.
+     */
     private GridPane createCardsGrid() {
         GridPane gridPane = new GridPane();
         gridPane.setAlignment(Pos.CENTER);
@@ -72,7 +87,6 @@ public class DrawPilePage {
         gridPane.setVgap(15);
         gridPane.setPadding(new Insets(20));
 
-        //Charge l'image verso
         Image imageVerso = loadCardBackImage();
         if(imageVerso == null){
             Label errorLabel = new Label("Image verso non trouvée");
@@ -81,21 +95,20 @@ public class DrawPilePage {
             return gridPane;
         }
 
-        //Crée une carte verso pour chaque carte disponible
+        // Crée une image cliquable pour chaque carte disponible
         for(int i = 0; i < availableCards.size(); i++){
             Card card = availableCards.get(i);
 
-            //Crée l'image verso
             ImageView cardView = new ImageView(imageVerso);
             cardView.setFitWidth(100);
             cardView.setFitHeight(150);
             cardView.setPreserveRatio(true);
 
-            // Rend cliquable
+            // Gestion du clic
             final int cardIndex = i;
             cardView.setOnMouseClicked(event -> handleCardBackClick(card, cardView, cardIndex));
 
-            //Style au survol
+            // Effet de survol
             cardView.setOnMouseEntered(event -> {
                 if(selectedCard == null || selectedCard != card){
                     cardView.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 10, 0, 0, 0);");
@@ -131,26 +144,27 @@ public class DrawPilePage {
         return null;
     }
 
+    /**
+     * Gère la sélection visuelle d'une carte.
+     */
     private void handleCardBackClick(Card card, ImageView cardView, int cardIndex){
         System.out.println("Carte verso cliquée (index " + cardIndex + ")");
 
         // Réinitialise la sélection précédente
         resetPreviousSelection();
 
-        //Marque cette carte comme sélectionnée
         selectedCard = card;
 
-        // Mettre en évidence la carte sélectionnée
+        // Met en évidence la carte sélectionnée (halo bleu)
         cardView.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0,100,255,0.8), 15, 0, 0, 0);");
         cardView.setScaleX(1.1);
         cardView.setScaleY(1.1);
 
-        // Affiche le bouton de sélection
+        // Affiche le bouton de confirmation
         showSelectionButton();
     }
 
     private void resetPreviousSelection(){
-        //Réinitialise tous les styles de cartes
         GridPane gridPane = (GridPane) ((VBox) root.getCenter()).getChildren().get(2);
 
         for (int i = 0; i < availableCards.size(); i++){
@@ -166,11 +180,13 @@ public class DrawPilePage {
         selectionZone.getChildren().clear();
     }
 
+    /**
+     * Affiche le bouton "Choisir cette carte" une fois une carte sélectionnée.
+     */
     private void showSelectionButton(){
         HBox selectionZone = (HBox) ((VBox) root.getCenter()).getChildren().get(3);
         selectionZone.getChildren().clear();
         if(selectedCard != null){
-            //Bouton pour choisir la carte
             selectButton = new Button("Choisir cette carte");
             selectButton.setOnMouseEntered(event -> {
                 selectButton.setStyle("-fx-background-color: #5C4C38; " +
@@ -185,10 +201,7 @@ public class DrawPilePage {
             selectButton.setOnAction(e -> {
                 if (cardSelectionHandler != null) {
                     System.out.println("Carte choisie: " + selectedCard.getValue());
-
-                    // Cache visuellement la carte dans la pioche
                     hideSelectedCard();
-
                     cardSelectionHandler.accept(selectedCard);
                 }
             });
@@ -197,6 +210,9 @@ public class DrawPilePage {
         }
     }
 
+    /**
+     * Cache la carte sélectionnée (pour simuler qu'elle a été prise).
+     */
     private void hideSelectedCard(){
         GridPane gridPane = (GridPane) ((VBox) root.getCenter()).getChildren().get(2);
 
@@ -221,7 +237,6 @@ public class DrawPilePage {
         hBox.setPadding(new Insets(10));
 
         endBtn = new Button("Retour");
-        // Style du bouton de fermeture
         endBtn.setStyle("-fx-background-color: #e74c3c;");
         endBtn.setOnMouseEntered(e -> endBtn.setStyle("-fx-background-color: #c0392b;"));
         endBtn.setOnMouseExited(e -> endBtn.setStyle("-fx-background-color: #e74c3c;"));

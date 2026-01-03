@@ -18,15 +18,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Page affichant les trios complétés par chaque joueur en mode Solo.
+ * Permet de visualiser l'avancement de la partie.
+ */
 public class TrioSoloPage {
 
     private final int nombreDeJoueurs;
     private final List<String> playerNames;
-    private final Map<Integer, List<Card>> playerTrios; //Joueur ID -> liste de trios
+    private final Map<Integer, List<Card>> playerTrios; // Map associant l'ID du joueur à la liste de ses trios (représentés par une carte)
     private BorderPane root;// Conteneur principal
     private Button endBtn;
     private Map<Integer, FlowPane> playerTrioContainers = new HashMap<>();
 
+    /**
+     * Constructeur de la page des trios solo.
+     * @param nombreJoueur Nombre total de joueurs.
+     * @param playerNames Liste des noms des joueurs.
+     * @param playerTrios Map des trios validés par joueur.
+     */
     public TrioSoloPage(int nombreJoueur, List<String> playerNames, Map<Integer, List<Card>> playerTrios) {
         this.nombreDeJoueurs = nombreJoueur;
         this.playerNames = playerNames;
@@ -40,12 +50,11 @@ public class TrioSoloPage {
         root.setPadding(new Insets(10));
         root.setTop(createEndArea());
         
-        // Utiliser un ScrollPane pour permettre le défilement si beaucoup de trios
+        // Utiliser un ScrollPane pour permettre le défilement si beaucoup de joueurs/trios
         ScrollPane scrollPane = new ScrollPane(createPrintArea(nombreDeJoueurs));
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         
-        // Centrer le contenu du ScrollPane
         StackPane contentWrapper = new StackPane(scrollPane);
         contentWrapper.setAlignment(Pos.CENTER);
         
@@ -59,7 +68,6 @@ public class TrioSoloPage {
         hBox.setPadding(new Insets(10));
 
         endBtn = new Button("Retour");
-        // Style du bouton de fermeture
         endBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
         endBtn.setOnMouseEntered(e -> endBtn.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold;"));
         endBtn.setOnMouseExited(e -> endBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"));
@@ -70,7 +78,7 @@ public class TrioSoloPage {
     }
 
     /**
-     * Affiche le nom des joueurs et leurs trios
+     * Crée la grille affichant les joueurs et leurs trios.
      */
     private GridPane createPrintArea(int nbJoueurs) {
         GridPane grid = new GridPane();
@@ -79,27 +87,26 @@ public class TrioSoloPage {
         grid.setVgap(10);
         grid.setAlignment(Pos.CENTER);
 
-        //Label d'affiche des cartes
         Label cardLabel = new Label("Trios de chaque joueur");
         cardLabel.setStyle("-fx-font-size: 28px; -fx-text-fill: #5C4C38;");
         cardLabel.setAlignment(Pos.CENTER);
         cardLabel.setMaxWidth(Double.MAX_VALUE);
         grid.add(cardLabel, 0, 0, 5, 1);
 
-        int colonnesParLigne = 2; // Réduit à 2 pour laisser plus de place aux trios extensibles
+        int colonnesParLigne = 2; // Affichage sur 2 colonnes
 
-        // Centrer le label dans sa cellule
         GridPane.setHalignment(cardLabel, HPos.CENTER);
         GridPane.setColumnSpan(cardLabel, colonnesParLigne);
 
-        // Défini les contraintes de colonne une seule fois
+        // Défini les contraintes de colonne
         for (int i = 0; i < colonnesParLigne; i++) {
             ColumnConstraints colConst = new ColumnConstraints();
             colConst.setPercentWidth(100.0 / colonnesParLigne);
-            colConst.setHalignment(HPos.CENTER); // Centre le contenu dans la colonne
+            colConst.setHalignment(HPos.CENTER);
             grid.getColumnConstraints().add(colConst);
         }
 
+        // Crée une boîte pour chaque joueur
         for (int joueur = 0; joueur < nbJoueurs; joueur++) {
             VBox box = createPlayerBox(joueur + 1);
 
@@ -108,7 +115,6 @@ public class TrioSoloPage {
 
             grid.add(box, colonne, ligne);
 
-            // Centrer chaque VBox dans sa cellule
             GridPane.setHalignment(box, HPos.CENTER);
             GridPane.setValignment(box, VPos.CENTER);
         }
@@ -137,11 +143,10 @@ public class TrioSoloPage {
         triosContainer.setAlignment(Pos.CENTER);
         triosContainer.setHgap(10);
         triosContainer.setVgap(10);
-        triosContainer.setPrefWrapLength(300); // Largeur préférée avant retour à la ligne
+        triosContainer.setPrefWrapLength(300);
 
         playerTrioContainers.put(numeroJoueur, triosContainer);
 
-        //Affiche les trios
         displayPlayerTrios(numeroJoueur);
 
         box.getChildren().addAll(label, triosContainer);
@@ -158,20 +163,22 @@ public class TrioSoloPage {
 
         slot.setStyle(
                 "-fx-border-color: #8B7355;" +
-                        "-fx-border-style: dashed;" + // Bordure en pointillés
+                        "-fx-border-style: dashed;" +
                         "-fx-border-width: 2;" +
                         "-fx-border-radius: 8;" +
                         "-fx-background-color: #F5E6D3;" +
                         "-fx-background-radius: 8;" +
-                        "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" // Ombre intérieure
+                        "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"
         );
 
-        // Désactiver les interactions
         slot.setMouseTransparent(true);
 
         return slot;
     }
 
+    /**
+     * Remplit le conteneur de trios pour un joueur donné.
+     */
     private void displayPlayerTrios(int playerId) {
         List<Card> trios =  playerTrios.get(playerId);
         FlowPane container = playerTrioContainers.get(playerId);
@@ -180,7 +187,7 @@ public class TrioSoloPage {
         container.getChildren().clear();
 
         int nbTrios = (trios != null) ? trios.size() : 0;
-        int slotsToCreate = Math.max(3, nbTrios); // Au moins 3 slots
+        int slotsToCreate = Math.max(3, nbTrios); // Affiche au moins 3 slots vides
 
         for (int i = 0; i < slotsToCreate; i++) {
             StackPane slot = createSlot();
@@ -207,7 +214,6 @@ public class TrioSoloPage {
 
                 slot.getChildren().add(cardView);
             }else{
-                // Fallback
                 Label valueLabel = new Label(String.valueOf(card.getValue()));
                 valueLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
                 slot.getChildren().add(valueLabel);

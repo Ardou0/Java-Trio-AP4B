@@ -8,6 +8,7 @@ import java.util.List;
  * DrawPile représente la pioche du jeu Trio.
  * Elle est responsable de la création du jeu de cartes complet, de son mélange
  * et de la distribution des cartes aux joueurs en début de partie.
+ * Elle gère également les cartes restantes qui forment le "centre" du jeu.
  */
 public class DrawPile {
 
@@ -26,7 +27,6 @@ public class DrawPile {
                 this.cards.add(new Card(trioValue));
             }
         }
-        System.out.println(this.cards);
         shuffle();
     }
 
@@ -50,9 +50,10 @@ public class DrawPile {
         int cardsPerPlayer;
         int totalCardsToDeal;
 
+        // Calcul du nombre de cartes à distribuer selon les règles officielles
         if (isTeamMode) {
             if (numPlayers == 4 || numPlayers == 6) { // 2 ou 3 équipes de 2
-                totalCardsToDeal = 36;
+                totalCardsToDeal = 36; // Toutes les cartes sont distribuées en équipe
                 cardsPerPlayer = totalCardsToDeal / numPlayers;
             } else {
                 throw new IllegalArgumentException("Le mode équipe est uniquement disponible pour 4 ou 6 joueurs.");
@@ -81,12 +82,13 @@ public class DrawPile {
             throw new IllegalStateException("Pas assez de cartes dans la pioche pour distribuer.");
         }
 
+        // Initialisation des mains vides
         List<List<Card>> playersHands = new ArrayList<>();
         for (int i = 0; i < numPlayers; i++) {
             playersHands.add(new ArrayList<>());
         }
 
-        // Distribue les cartes une par une à chaque joueur
+        // Distribue les cartes une par une à chaque joueur (comme une distribution physique)
         for (int i = 0; i < cardsPerPlayer; i++) {
             for (int j = 0; j < numPlayers; j++) {
                 playersHands.get(j).add(draw());

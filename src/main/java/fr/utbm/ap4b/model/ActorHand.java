@@ -7,6 +7,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Représente la main d'un joueur, contenant un ensemble de cartes.
+ * Cette classe gère le stockage, le tri automatique et l'accès aux cartes extrêmes (min/max).
  */
 public class ActorHand {
 
@@ -21,7 +22,7 @@ public class ActorHand {
 
     /**
      * Construit une main à partir d'une liste de cartes initiale (distribuée par DrawPile).
-     * La main est automatiquement triée à la création.
+     * La main est automatiquement triée à la création pour respecter les règles du jeu.
      *
      * @param initialCards La liste des cartes à ajouter à la main.
      */
@@ -32,6 +33,7 @@ public class ActorHand {
 
     /**
      * Trie les cartes dans la main par ordre croissant de leur valeur.
+     * Cette méthode est appelée après chaque modification de la main (ajout/retrait).
      */
     public void sortHand() {
         this.cards.sort(Comparator.comparingInt(Card::getValue));
@@ -48,7 +50,7 @@ public class ActorHand {
     }
 
     /**
-     * Ajoute une carte à la main et la retrie.
+     * Ajoute une carte à la main et la retrie immédiatement.
      * @param card La carte à ajouter.
      */
     public void addCard(Card card) {
@@ -60,14 +62,14 @@ public class ActorHand {
      * Renvoie la carte avec la plus petite valeur dans la main.
      * La main doit être triée pour que cette méthode soit fiable.
      *
-     * @return La carte la plus petite.
+     * @return La carte la plus petite disponible (iterable).
      * @throws NoSuchElementException si la main est vide.
      */
     public Card getSmallestCard() {
         if (cards.isEmpty()) {
             throw new NoSuchElementException("La main est vide.");
         }
-        // Comme la main est triée, la plus petite carte est la première.
+        // Comme la main est triée, on cherche la première carte disponible depuis le début
         for(int i = 0; i < cards.size(); i++) {
             if(cards.get(i).isIterable()) {
                 return cards.get(i);
@@ -80,13 +82,14 @@ public class ActorHand {
      * Renvoie la carte avec la plus grande valeur dans la main.
      * La main doit être triée pour que cette méthode soit fiable.
      *
-     * @return La carte la plus grande.
+     * @return La carte la plus grande disponible (iterable).
      * @throws NoSuchElementException si la main est vide.
      */
     public Card getLargestCard() {
         if (cards.isEmpty()) {
             throw new NoSuchElementException("La main est vide.");
         }
+        // Comme la main est triée, on cherche la première carte disponible depuis la fin
         for(int i = cards.size() - 1; i >= 0; i--) {
             if(cards.get(i).isIterable()) {
                 return cards.get(i);

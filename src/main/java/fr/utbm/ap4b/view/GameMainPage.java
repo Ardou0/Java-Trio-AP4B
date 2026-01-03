@@ -18,53 +18,67 @@ import java.io.InputStream;
 import java.util.*;
 
 /**
- * Vue principale du jeu Trio avec JavaFX
- * Responsabilités : affichage et interaction utilisateur
+ * Vue principale du jeu Trio avec JavaFX.
+ * Cette classe gère l'affichage du plateau de jeu, des mains des joueurs,
+ * des cartes révélées au centre et des interactions utilisateur (clics, boutons).
  */
 public class GameMainPage {
 
     // Composants graphiques principaux
     private final int nombreJoueurs;
-    private StackPane rootStack; // Conteneur racine pour superposer les couches
-    private BorderPane gameRoot; // Conteneur du jeu
-    private Button rulesButton; //Bouton menant à la page de règle
-    private Button trioButton;
-    private Button drawPileButton;
-    private int actualPlayer;
-    private Button printButton;
-    private Button smallestCard;
-    private Button largestCard;
-    private Label cardLabel;
-    private Map<Integer, Button> upArrowButtons = new HashMap<>();
-    private Map<Integer, Button> downArrowButtons = new HashMap<>();
+    private StackPane rootStack; // Conteneur racine pour superposer les couches (jeu + overlays)
+    private BorderPane gameRoot; // Conteneur principal du jeu
+    private Button rulesButton; // Bouton menant à la page de règles
+    private Button trioButton; // Bouton pour voir les trios complétés
+    private Button drawPileButton; // Bouton pour accéder à la pioche
+    private int actualPlayer; // ID du joueur dont c'est le tour (pour l'affichage)
+    
+    // Boutons d'actions personnelles
+    private Button printButton; // Voir/Cacher ses cartes
+    private Button smallestCard; // Révéler sa plus petite carte
+    private Button largestCard; // Révéler sa plus grande carte
+    
+    private Label cardLabel; // Titre de la zone de main ("Cartes de X")
+    
+    // Maps pour gérer les boutons dynamiques des adversaires
+    private Map<Integer, Button> upArrowButtons = new HashMap<>(); // Flèches "Max"
+    private Map<Integer, Button> downArrowButtons = new HashMap<>(); // Flèches "Min"
+    private Map<Integer, Button> opponentButtons = new HashMap<>(); // Boutons de sélection d'adversaire
+    private Map<Integer, VBox> arrowContainers = new HashMap<>(); // Conteneurs des flèches par joueur
+    private Map<Integer, HBox> opponentContainers = new HashMap<>(); // Conteneurs globaux par joueur
 
-    // Maps pour stocker les références aux boutons
-    private Map<Integer, Button> opponentButtons = new HashMap<>();
-    private Map<Integer, VBox> arrowContainers = new HashMap<>(); // Conteneur des flèches
-    private Map<Integer, HBox> opponentContainers = new HashMap<>();
+    // Gestion de l'affichage des cartes
+    private List<StackPane> cardSlots = new ArrayList<>(); // Emplacements des cartes révélées au centre
+    private Map<Integer, ImageView> cardImages = new HashMap<>(); // Images des cartes au centre
 
-    private List<StackPane> cardSlots = new ArrayList<>(); // Stocke les emplacements des cartes
-    private Map<Integer, ImageView> cardImages = new HashMap<>(); // Stocke les images des cartes
+    private List<ImageView> cardViews = new ArrayList<>(); // Références aux images de la main du joueur
+    private Map<Card, ImageView> cardToViewMap = new HashMap<>(); // Association carte → vue (non utilisé actuellement mais utile pour futures anims)
 
-    private List<ImageView> cardViews = new ArrayList<>(); // Références aux images des cartes
-    private Map<Card, ImageView> cardToViewMap = new HashMap<>(); // Association carte → vue
-
-    private Set<Card> revealedCards = new HashSet<>(); // Cartes déjà révélées
+    private Set<Card> revealedCards = new HashSet<>(); // Cartes déjà révélées dans ce tour (pour ne pas les réafficher dans la main)
     private List<Card> currentHand = new ArrayList<>(); // Main actuelle du joueur
-    private boolean areCardsVisible = false; // État de visibilité des cartes
+    private boolean areCardsVisible = false; // État de visibilité des cartes (face cachée/visible)
 
 
+    /**
+     * Constructeur de la page de jeu principale.
+     * @param nombreJoueurs Le nombre total de joueurs.
+     * @param actualPlayer L'ID du joueur qui commence (pour l'initialisation de l'affichage).
+     */
     public GameMainPage(int nombreJoueurs, int actualPlayer) {
         this.nombreJoueurs = nombreJoueurs;
         this.actualPlayer = actualPlayer;
         showScreen();
     }
 
-    //Affiche la page javaFX
+    /**
+     * Initialise et assemble les composants de l'interface graphique.
+     */
     private void showScreen(){
         rootStack = new StackPane();
         gameRoot = new BorderPane();
         gameRoot.setPadding(new Insets(10));
+        
+        // Assemblage des différentes zones
         gameRoot.setCenter(createHandArea());
         gameRoot.setTop(createRulesButton());
         gameRoot.setBottom(createBoardContainer());
@@ -75,7 +89,8 @@ public class GameMainPage {
     }
 
     /**
-     * Désactive le bouton Pioche pour le mode équipe
+     * Désactive visuellement et fonctionnellement le bouton Pioche.
+     * Utilisé en mode équipe où la pioche n'est pas accessible directement.
      */
     public void disableDrawPileForTeamMode() {
         if (drawPileButton != null) {
@@ -92,14 +107,19 @@ public class GameMainPage {
     }
 
     /**
-     * Affiche un message temporaire en overlay (sans callback)
+     * Affiche un message temporaire en surimpression (Overlay).
+     * @param message Le texte à afficher.
+     * @param durationMillis La durée d'affichage en millisecondes.
      */
     public void showOverlayMessage(String message, int durationMillis) {
         showOverlayMessage(message, durationMillis, null);
     }
 
     /**
-     * Affiche un message temporaire en overlay avec une action à la fin
+     * Affiche un message temporaire en overlay avec une action à la fin.
+     * @param message Le texte à afficher.
+     * @param durationMillis La durée d'affichage.
+     * @param onFinished L'action à exécuter après la disparition du message.
      */
     public void showOverlayMessage(String message, int durationMillis, Runnable onFinished) {
         Label messageLabel = new Label(message);
@@ -114,21 +134,20 @@ public class GameMainPage {
         messageLabel.setWrapText(true);
         messageLabel.setMaxWidth(400);
         messageLabel.setTextAlignment(TextAlignment.CENTER);
-        messageLabel.setAlignment(Pos.CENTER); // Centrer le texte dans le label
+        messageLabel.setAlignment(Pos.CENTER);
 
         StackPane overlay = new StackPane(messageLabel);
-        overlay.setAlignment(Pos.CENTER); // Centrer le label dans l'overlay
+        overlay.setAlignment(Pos.CENTER);
         
-        // Ajouter l'overlay à la racine
         rootStack.getChildren().add(overlay);
 
-        // Animation d'apparition
+        // Animation d'apparition (Fade In)
         FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlay);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
         fadeIn.play();
 
-        // Disparition automatique
+        // Disparition automatique après délai
         PauseTransition delay = new PauseTransition(Duration.millis(durationMillis));
         delay.setOnFinished(e -> {
             FadeTransition fadeOut = new FadeTransition(Duration.millis(300), overlay);
@@ -136,7 +155,6 @@ public class GameMainPage {
             fadeOut.setToValue(0);
             fadeOut.setOnFinished(event -> {
                 rootStack.getChildren().remove(overlay);
-                // Exécuter l'action suivante si elle existe
                 if (onFinished != null) {
                     onFinished.run();
                 }
@@ -147,7 +165,11 @@ public class GameMainPage {
     }
 
     /**
-     * Affiche un message bloquant avec un bouton pour continuer
+     * Affiche un message bloquant qui nécessite une confirmation de l'utilisateur.
+     * Utile pour les fins de tour ou les événements importants.
+     * @param message Le message à afficher.
+     * @param buttonText Le texte du bouton de confirmation.
+     * @param onConfirm L'action à exécuter lors du clic sur le bouton.
      */
     public void showBlockingMessage(String message, String buttonText, Runnable onConfirm) {
         Label messageLabel = new Label(message);
@@ -169,9 +191,10 @@ public class GameMainPage {
             "-fx-font-size: 18px;" +
             "-fx-padding: 10px 20px;" +
             "-fx-background-radius: 5px;" +
-            "-fx-border-color: transparent;" + // Fix pour le border radius
-            "-fx-background-insets: 0;" // Fix pour le background
+            "-fx-border-color: transparent;" +
+            "-fx-background-insets: 0;"
         );
+        // Effets de survol
         confirmButton.setOnMouseEntered(e -> confirmButton.setStyle("-fx-background-color: #5C4C38; -fx-text-fill: white; -fx-font-size: 18px; -fx-padding: 10px 20px; -fx-background-radius: 5px; -fx-border-color: transparent; -fx-background-insets: 0;"));
         confirmButton.setOnMouseExited(e -> confirmButton.setStyle("-fx-background-color: #8B7355; -fx-text-fill: white; -fx-font-size: 18px; -fx-padding: 10px 20px; -fx-background-radius: 5px; -fx-border-color: transparent; -fx-background-insets: 0;"));
 
@@ -188,10 +211,8 @@ public class GameMainPage {
         StackPane overlay = new StackPane(content);
         overlay.setAlignment(Pos.CENTER);
         
-        // Ajouter l'overlay à la racine
         rootStack.getChildren().add(overlay);
 
-        // Animation d'apparition
         FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlay);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
@@ -212,25 +233,23 @@ public class GameMainPage {
     }
 
     /**
-     * Crée la zone des cases en bas de l'écran
+     * Crée la zone inférieure contenant les emplacements de cartes révélées (le "Board").
      */
     private BorderPane createBoardContainer(){
         BorderPane bottomContainer = new BorderPane();
 
         drawPileButton = new Button("Pioche");
         drawPileButton.setAlignment(Pos.CENTER);
-
         drawPileButton.setOnMouseEntered(e -> drawPileButton.setStyle("-fx-background-color: #5C4C38;"));
         drawPileButton.setOnMouseExited(e -> drawPileButton.setStyle("-fx-background-color: #8B7355;"));
 
         trioButton = new Button("Trio");
         trioButton.setAlignment(Pos.CENTER);
-
         trioButton.setOnMouseEntered(e -> trioButton.setStyle("-fx-background-color: #5C4C38;"));
         trioButton.setOnMouseExited(e -> trioButton.setStyle("-fx-background-color: #8B7355;"));
 
-        //Board montrant cartes retournées
-        HBox bottomBoardContainer = new HBox(15); // 15px d'espace entre les cases
+        // Conteneur horizontal pour les 3 emplacements de cartes
+        HBox bottomBoardContainer = new HBox(15);
         bottomBoardContainer.setAlignment(Pos.CENTER);
         bottomBoardContainer.setPadding(new Insets(20,10, 30, 10));
         bottomBoardContainer.setStyle(
@@ -238,10 +257,10 @@ public class GameMainPage {
                 "-fx-background-radius: 10 10 0 0;" +
                 "-fx-border-color: #0D1117;" +
                 "-fx-border-width: 3;" +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);" // Ombre
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);"
         );
 
-        // Création de 3 cases et les stocks dans la liste
+        // Création des 3 slots vides
         cardSlots.clear();
         for (int i = 0; i < 3; i++) {
             StackPane slot = createSlot();
@@ -249,15 +268,15 @@ public class GameMainPage {
             cardSlots.add(slot);
         }
 
-        // Lier la hauteur des boutons à celle du HBox
+        // Mise en page des boutons latéraux
         drawPileButton.prefHeightProperty().bind(bottomBoardContainer.heightProperty());
         trioButton.prefHeightProperty().bind(bottomBoardContainer.heightProperty());
 
         drawPileButton.setPrefWidth(100);
         trioButton.setPrefWidth(100);
 
-        BorderPane.setMargin(drawPileButton, new Insets(0, 10, 0, 0)); // Marge à droite
-        BorderPane.setMargin(trioButton, new Insets(0, 0, 0, 10)); // Marge à gauche
+        BorderPane.setMargin(drawPileButton, new Insets(0, 10, 0, 0));
+        BorderPane.setMargin(trioButton, new Insets(0, 0, 0, 10));
 
         BorderPane.setAlignment(drawPileButton, Pos.CENTER);
         bottomContainer.setLeft(drawPileButton);
@@ -271,7 +290,7 @@ public class GameMainPage {
     }
 
     /**
-     * Crée une case individuelle (placeholder pour future carte)
+     * Crée un emplacement de carte vide (Slot) avec un style en pointillés.
      */
     public static StackPane createSlot() {
         StackPane slot = new StackPane();
@@ -282,24 +301,23 @@ public class GameMainPage {
 
         slot.setStyle(
                 "-fx-border-color: #8B7355;" +
-                "-fx-border-style: dashed;" + // Bordure en pointillés
+                "-fx-border-style: dashed;" +
                 "-fx-border-width: 2;" +
                 "-fx-border-radius: 8;" +
                 "-fx-background-color: #F5E6D3;" +
                 "-fx-background-radius: 8;" +
-                "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" // Ombre intérieure
+                "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"
         );
 
-        // Désactiver les interactions
-        slot.setMouseTransparent(true);
+        slot.setMouseTransparent(true); // Pas d'interaction directe sur les slots
 
         return slot;
     }
 
     /**
-     * Affiche une carte dans un emplacement spécifique du board
-     * @param slotIndex Index de l'emplacement (0, 1 ou 2)
-     * @param card Carte à afficher (objet Card du modèle)
+     * Affiche une carte dans un emplacement spécifique du board.
+     * @param slotIndex Index de l'emplacement (0, 1 ou 2).
+     * @param card La carte à afficher.
      */
     public void displayCardInBoard(int slotIndex, Card card) {
         if(slotIndex < 0 || slotIndex >= cardSlots.size()){
@@ -314,10 +332,9 @@ public class GameMainPage {
         }
 
         StackPane slot = cardSlots.get(slotIndex);
-        slot.getChildren().clear(); // Nettoie l'emplacement
+        slot.getChildren().clear();
 
         try{
-            //utilie le chemin depuis l'objet Card
             String imagePath = card.getImagePath();
             InputStream is = getClass().getResourceAsStream(imagePath);
 
@@ -332,7 +349,7 @@ public class GameMainPage {
                 cardImages.put(slotIndex, cardView);
                 slot.getChildren().add(cardView);
             } else{
-                // Affiche la valeur en texte si l'image n'est pas trouvée
+                // Fallback texte si l'image manque
                 System.err.println("Image non trouvée " +  imagePath);
                 Label valueLabel = new Label(String.valueOf(card.getValue()));
                 slot.getChildren().add(valueLabel);
@@ -340,7 +357,6 @@ public class GameMainPage {
         }
         catch(Exception e) {
             e.printStackTrace();
-            // En cas d'erreur, affiche la valeur en texte
             Label valueLabel = new Label(String.valueOf(card.getValue()));
             valueLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #5C4C38;");
             slot.getChildren().add(valueLabel);
@@ -348,14 +364,12 @@ public class GameMainPage {
     }
 
     /**
-     * Met à jour l'affichage du board avec les cartes révélées
-     * @param cardLocations Liste des CardLocation du modèle
+     * Met à jour l'ensemble du board avec la liste des cartes révélées.
+     * @param cardLocations Liste des emplacements de cartes provenant du modèle.
      */
     public void updateBoard(List<CardLocation> cardLocations) {
-        //Vide le board
         clearBoard();
 
-        //Affiche les cartes
         for(int i = 0; i < cardLocations.size() && i < cardSlots.size(); i++){
             CardLocation cardLocation = cardLocations.get(i);
             Card card = cardLocation.getCard();
@@ -365,27 +379,23 @@ public class GameMainPage {
     }
 
     /**
-     * Crée la zone de pioche
+     * Crée la zone centrale affichant la main du joueur.
      */
     private GridPane createHandArea() {
-        // Grille pour les cartes
         GridPane handGrid = new GridPane();
         handGrid.setAlignment(Pos.CENTER);
-        handGrid.setHgap(10); // Espace horizontal de 10 px entre les colonnes de la grille
-        handGrid.setVgap(10); // Espace vertical de 10 px entre les lignes de la grille
+        handGrid.setHgap(10);
+        handGrid.setVgap(10);
         handGrid.setPadding(new Insets(20));
 
-        //Label d'affiche des cartes
         cardLabel = new Label("Tes cartes" );
         cardLabel.setStyle("-fx-font-size: 40px; ");
         cardLabel.setAlignment(Pos.CENTER);
         cardLabel.setMaxWidth(Double.MAX_VALUE);
-        // Label prend 3 colonnes de large sur 1 ligne de haut (colonne_début, ligne_début, nombre_colonnes, nombre_lignes)
         handGrid.add(cardLabel, 0, 0, 5, 1);
 
-        //Charger l'image verso pour les afficher
+        // Chargement initial des dos de cartes
         Image imageVerso = null;
-
         InputStream is = getClass().getResourceAsStream("/images/carte_verso.png");
         if (is != null) {
             imageVerso = new Image(is);
@@ -393,10 +403,9 @@ public class GameMainPage {
             System.err.println("Fichier carte_verso.png non trouvé !");
         }
 
+        // Création des emplacements (9 max pour une main)
         for (int i = 0; i < 9; i++) {
             ImageView cardView = new ImageView(imageVerso);
-
-            // Définit la taille
             cardView.setFitWidth(100);
             cardView.setFitHeight(150);
             cardView.setPreserveRatio(true);
@@ -405,7 +414,6 @@ public class GameMainPage {
             int line = (i / 5) + 1;
             handGrid.add(cardView, column, line);
 
-            //Stocke la référence
             cardViews.add(cardView);
         }
 
@@ -413,7 +421,8 @@ public class GameMainPage {
     }
 
     /**
-     * Marque une carte comme révélée (elle ne sera plus affichée)
+     * Marque une carte comme révélée pour qu'elle ne soit plus affichée dans la main du joueur.
+     * @param card La carte à masquer.
      */
     public void markCardAsRevealed(Card card) {
         if (card == null) return;
@@ -421,19 +430,18 @@ public class GameMainPage {
         revealedCards.add(card);
         System.out.println("DEBUG: Carte " + card.getValue() + " marquée comme révélée");
 
-        // Met à jour immédiatement l'affichage
         updateHandDisplay();
     }
 
     /**
-     * Réinitialise la liste des cartes révélées (pour un nouveau tour)
+     * Réinitialise la liste des cartes révélées (au début d'un nouveau tour).
      */
     public void resetRevealedCards() {
         revealedCards.clear();
     }
 
     /**
-     * Cache toutes les cartes (pour réinitialiser)
+     * Cache visuellement toutes les cartes de la main.
      */
     public void hideAllHandCards() {
         for (ImageView cardView : cardViews) {
@@ -443,7 +451,8 @@ public class GameMainPage {
     }
 
     /**
-     * Définit la main actuelle du joueur
+     * Met à jour la main du joueur courant.
+     * @param hand La liste des cartes de la main.
      */
     public void setCurrentHand(List<Card> hand) {
         this.currentHand = new ArrayList<>(hand);
@@ -451,69 +460,61 @@ public class GameMainPage {
     }
 
     /**
-     * Met à jour l'affichage complet de la main
+     * Rafraîchit l'affichage de la main en fonction de l'état de visibilité et des cartes révélées.
      */
     public void updateHandDisplay() {
-        // Vide la grille existante
         GridPane handGrid = (GridPane) gameRoot.getCenter();
+        // Nettoie les anciennes images (sauf le titre)
         handGrid.getChildren().removeIf(node ->
-                //Supprime tout ce qui n'est pzs sur la ligne 0 (titre)
                 node instanceof ImageView && GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) > 0);
 
-        // Charge l'image verso
         Image imageVerso = loadCardBackImage();
         if (imageVerso == null) {
             System.err.println("Image verso non trouvée !");
             return;
         }
 
-        // Affiche seulement les cartes non révélées
+        // Filtre les cartes à afficher (exclut celles qui sont sur le board)
         List<Card> cardsToDisplay = new ArrayList<>();
         for (Card card : currentHand) {
             if (!revealedCards.contains(card)) {
                 cardsToDisplay.add(card);
             }
         }
-        // Affiche les cartes restantes
+        
+        // Affiche les cartes
         for (int i = 0; i < cardsToDisplay.size() && i < 9; i++) {
             Card card = cardsToDisplay.get(i);
             ImageView cardView;
 
             if (areCardsVisible) {
-                // Si les cartes doivent être visibles, on charge leur image
+                // Face visible
                 try {
                     InputStream is = getClass().getResourceAsStream(card.getImagePath());
                     if (is != null) {
                         cardView = new ImageView(new Image(is));
                     } else {
-                        cardView = new ImageView(imageVerso); // Fallback
+                        cardView = new ImageView(imageVerso);
                     }
                 } catch (Exception e) {
-                    cardView = new ImageView(imageVerso); // Fallback
+                    cardView = new ImageView(imageVerso);
                 }
             } else {
-                // Sinon on affiche le dos
+                // Face cachée
                 cardView = new ImageView(imageVerso);
             }
 
             cardView.setFitWidth(100);
             cardView.setFitHeight(150);
             cardView.setPreserveRatio(true);
-
-            // Stocke la référence à la carte dans la vue
             cardView.setUserData(card);
 
-            // Position dans la grille (5 colonnes max)
             int column = i % 5;
             int row = (i / 5) + 1;
             handGrid.add(cardView, column, row);
         }
-        // Si moins de cartes que d'emplacements, les autres restent cachées
     }
 
-    /**
-     * Charge l'image verso
-     */
     private Image loadCardBackImage() {
         try {
             InputStream is = getClass().getResourceAsStream("/images/carte_verso.png");
@@ -526,9 +527,6 @@ public class GameMainPage {
         return null;
     }
 
-    /**
-     * Met à jour le titre avec le nom du joueur
-     */
     public void updateTitle(String playerName) {
         if (cardLabel != null) {
             cardLabel.setText("Cartes de " + playerName);
@@ -536,14 +534,13 @@ public class GameMainPage {
     }
 
     /**
-     * Crée la zone des contrôles (boutons)
+     * Crée le bouton d'accès aux règles en haut à droite.
      */
     private HBox createRulesButton() {
         HBox help = new HBox(15);
         help.setAlignment(Pos.TOP_RIGHT);
         help.setPadding(new Insets(10));
 
-        // Bouton de contrôle
         rulesButton = new Button("Règles");
         rulesButton.setOnMouseEntered(e -> rulesButton.setStyle("-fx-background-color: #5C4C38;"));
         rulesButton.setOnMouseExited(e -> rulesButton.setStyle("-fx-background-color: #8B7355;"));
@@ -553,16 +550,18 @@ public class GameMainPage {
         return help;
     }
 
+    /**
+     * Crée la zone de gauche contenant la liste des adversaires.
+     */
     private VBox createOpponentArea() {
         VBox vBox = new VBox(5);
         vBox.setAlignment(Pos.CENTER);
         vBox.setPadding(new Insets(5));
-        vBox.setMinWidth(220); // Force une largeur minimale pour éviter le wrapping
+        vBox.setMinWidth(220);
 
-        //Explication des boutons
         Label explanation = new Label("Choisis un joueur à qui voir une carte");
         explanation.setPrefWidth(200);
-        explanation.setStyle("-fx-font-size: 16px; "); // Réduction légère de la police
+        explanation.setStyle("-fx-font-size: 16px; ");
         explanation.setWrapText(true);
         explanation.setAlignment(Pos.CENTER);
         explanation.setTextAlignment(TextAlignment.CENTER);
@@ -570,20 +569,18 @@ public class GameMainPage {
         vBox.getChildren().add(explanation);
 
         for (int i = 1; i <= nombreJoueurs; i++) {
-            // Création d'un conteneur pour chaque joueur
             HBox opponentContainer = createOpponentContainer(i);
             vBox.getChildren().add(opponentContainer);
             opponentContainers.put(i, opponentContainer);
         }
 
-        // Initialiser l'affichage (masquer le joueur actuel)
         updateOpponentButtons();
 
         return vBox;
     }
 
     /**
-     * Crée un conteneur avec le bouton de l'adversaire et les boutons de flèches
+     * Crée le conteneur pour un adversaire spécifique (Nom + Flèches d'action).
      */
     private HBox createOpponentContainer(int adversaireNumero) {
         HBox hBox = new HBox(5);
@@ -599,16 +596,14 @@ public class GameMainPage {
 
         VBox arrowButtons = new VBox(2);
         arrowButtons.setAlignment(Pos.CENTER);
-        arrowButtons.setVisible(false);
+        arrowButtons.setVisible(false); // Caché par défaut
 
-        // Bouton flèche vers le haut
         Button upButton = new Button("▲");
         upButton.setOnMouseEntered(e -> upButton.setStyle("-fx-background-color: #5C4C38;"));
         upButton.setOnMouseExited(e -> upButton.setStyle("-fx-background-color: #8B7355;"));
         upButton.setMinSize(65,40);
         upArrowButtons.put(adversaireNumero, upButton);
 
-        // Bouton flèche vers le bas
         Button downButton = new Button("▼");
         downButton.setOnMouseEntered(e -> downButton.setStyle("-fx-background-color: #5C4C38;"));
         downButton.setOnMouseExited(e -> downButton.setStyle("-fx-background-color: #8B7355;"));
@@ -624,6 +619,9 @@ public class GameMainPage {
     }
 
 
+    /**
+     * Crée la zone de droite avec les actions personnelles du joueur.
+     */
     private VBox createPersonalArea(){
         VBox vBox = new VBox(10);
         vBox.setAlignment(Pos.CENTER_RIGHT);
@@ -631,7 +629,6 @@ public class GameMainPage {
 
         int maxWidht = 145;
 
-        //Explication des boutons
         Label explanation = new Label("Tes propres actions");
         explanation.setPrefWidth(maxWidht);
         explanation.setStyle("-fx-font-size: 18px; ");
@@ -641,7 +638,6 @@ public class GameMainPage {
         explanation.setMaxWidth(Double.MAX_VALUE);
         vBox.getChildren().add(explanation);
 
-        //The player looks at all his cards
         printButton = new Button("Voir mes cartes");
         printButton.setPrefWidth(maxWidht);
         printButton.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
@@ -650,7 +646,6 @@ public class GameMainPage {
         printButton.setAlignment(Pos.CENTER);
         printButton.setWrapText(true);
 
-        //The player shows his smallest card
         smallestCard = new Button("Montrer sa plus petite carte");
         smallestCard.setPrefWidth(maxWidht);
         smallestCard.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
@@ -659,7 +654,6 @@ public class GameMainPage {
         smallestCard.setAlignment(Pos.CENTER);
         smallestCard.setWrapText(true);
 
-        //The player shows his largest card
         largestCard = new Button("Montrer sa plus grande carte");
         largestCard.setPrefWidth(maxWidht);
         largestCard.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
@@ -673,46 +667,34 @@ public class GameMainPage {
         return vBox;
     }
 
-    // Affiche les flèches d'un joueur spécifique
+    /**
+     * Affiche les flèches d'action pour un joueur spécifique.
+     */
     public void showArrowsForPlayer(int playerId) {
-        // Cache toutes les flèches d'abord
         hideAllArrows();
-
-        // Affiche les flèches du joueur sélectionné
         VBox arrows = arrowContainers.get(playerId);
         if (arrows != null) {
             arrows.setVisible(true);
-        } else {
-            System.out.println("DEBUG: No arrows found for playerId: " + playerId);
-            System.out.println("DEBUG: arrowContainers keys: " + arrowContainers.keySet());
         }
     }
 
-    // Cache toutes les flèches
     public void hideAllArrows() {
         for (VBox arrows : arrowContainers.values()) {
             arrows.setVisible(false);
         }
     }
 
-    /**
-     * Vide tous les emplacements du board
-     */
     public void clearBoard() {
         for (int i = 0; i < cardSlots.size(); i++) {
             clearSlot(i);
         }
     }
 
-    /**
-     * Vide un emplacement spécifique
-     */
     public void clearSlot(int slotIndex) {
         if (slotIndex >= 0 && slotIndex < cardSlots.size()) {
             StackPane slot = cardSlots.get(slotIndex);
             slot.getChildren().clear();
-
-            // Remettre le style par défaut
+            // Reset style
             slot.setStyle(
                     "-fx-border-color: #8B7355;" +
                     "-fx-border-style: dashed;" +
@@ -722,13 +704,10 @@ public class GameMainPage {
                     "-fx-background-radius: 8;" +
                     "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"
             );
-
-            // Retirer l'image de la map
             cardImages.remove(slotIndex);
         }
     }
 
-    // Met à jour un nom spécifique
     public void updatePlayerName(int playerId, String newName) {
         Button btn = opponentButtons.get(playerId);
         if (btn != null) {
@@ -736,7 +715,6 @@ public class GameMainPage {
         }
     }
 
-    // Met à jour tous les noms
     public void updateAllPlayerNames(Map<Integer, String> playerNames) {
         for (Map.Entry<Integer, String> entry : playerNames.entrySet()) {
             updatePlayerName(entry.getKey(), entry.getValue());
@@ -744,22 +722,17 @@ public class GameMainPage {
     }
 
     /**
-     * Met à jour l'affichage des boutons adverses en fonction du joueur actuel
+     * Met à jour la visibilité des boutons adverses (cache le joueur courant).
      */
     private void updateOpponentButtons() {
-        // Cache toutes les flèches
         hideAllArrows();
-
-        // Pour chaque joueur
         for (int playerId = 0; playerId <= nombreJoueurs; playerId++) {
             HBox container = opponentContainers.get(playerId);
             if(container != null) {
                 if (playerId == actualPlayer) {
-                    // Masque le joueur actuel
                     container.setVisible(false);
                     container.setManaged(false);
                 } else{
-                    // Affiche les adversaires
                     container.setVisible(true);
                     container.setManaged(true);
                 }
@@ -772,7 +745,6 @@ public class GameMainPage {
             System.err.println("ERREUR: Joueur invalide: " + newActualPlayer);
             return;
         }
-
         this.actualPlayer = newActualPlayer;
         updateOpponentButtons();
     }
@@ -786,56 +758,21 @@ public class GameMainPage {
         return areCardsVisible;
     }
 
-    // Getter pour le bouton du joueur
+    // --- Getters pour les contrôleurs ---
+
     public Button getOpponentButton(int playerId) {
         return opponentButtons.get(playerId);
     }
 
     public StackPane getRoot() {return rootStack;}
-
-    /**
-     * Renvoie le bouton des règles
-     */
     public Button getRulesButton(){ return rulesButton;}
-
-    /**
-     * Renvoie le bouton de la pioche
-     */
     public Button getDrawPileButton(){return  drawPileButton;}
-
-    /**
-     * Renvoie le bouton de la page des trios
-     */
     public Button getTrioButton(){return  trioButton;}
-
-    /**
-     * Affiche les cartes du joueur
-     */
     public Button getPrintButton(){return  printButton;}
-
-    /**
-     * Place dans le board la plus petite carte du joueur
-     */
     public Button getSmallestButton(){return  smallestCard;}
-
-    /**
-     * Place dans le board la plus grande carte du joueur actif
-     */
     public Button getlargestButton(){return  largestCard;}
-
-    /**
-     * Renvoie le label titre
-     */
     public Label getTitleLabel(){return cardLabel;}
-
-    /**
-     * Place dans le board la plus grande carte du joueur en paramètre
-     */
     public Button getUpArrowButton(int playerId){return upArrowButtons.get(playerId);}
-
-    /**
-     * Place dans le board la plus petite carte du joueur en paramètre
-     */
     public Button getDownArrowButton(int playerId){return downArrowButtons.get(playerId);}
 
 }

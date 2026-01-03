@@ -19,10 +19,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+/**
+ * Vue dédiée à la phase d'échange de cartes (Mode Équipe).
+ * Permet à un joueur de sélectionner une carte de sa main pour la donner à son coéquipier.
+ */
 public class ExchangePage {
 
     private BorderPane root;
-    private Consumer<Card> onCardSelected;
+    private Consumer<Card> onCardSelected; // Callback vers le contrôleur
     private Card selectedCard = null;
     private Button confirmButton;
     private Button revealButton;
@@ -30,6 +34,12 @@ public class ExchangePage {
     private Map<Card, ImageView> cardViews = new HashMap<>();
     private Image cardBackImage;
 
+    /**
+     * Constructeur de la page d'échange.
+     * @param playerName Nom du joueur qui donne la carte.
+     * @param teammateName Nom du coéquipier qui reçoit.
+     * @param hand La main du joueur.
+     */
     public ExchangePage(String playerName, String teammateName, List<Card> hand) {
         loadResources();
         createView(playerName, teammateName, hand);
@@ -62,7 +72,7 @@ public class ExchangePage {
         Label instructionLabel = new Label(playerName + ", choisis une carte à donner à " + teammateName);
         instructionLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #8B7355;");
 
-        // Bouton pour révéler les cartes
+        // Bouton pour révéler les cartes (sécurité anti-triche visuelle)
         revealButton = new Button("Voir mes cartes");
         revealButton.setStyle("-fx-font-size: 16px;");
         revealButton.setOnAction(e -> toggleCardsVisibility());
@@ -81,7 +91,7 @@ public class ExchangePage {
             ImageView cardView = createCardView(card);
             cardViews.put(card, cardView);
             
-            // Gestion de la sélection
+            // Gestion de la sélection au clic
             cardView.setOnMouseClicked(e -> {
                 if (!areCardsVisible) return; // Impossible de sélectionner si caché
 
@@ -112,6 +122,9 @@ public class ExchangePage {
         root.setBottom(bottomBox);
     }
 
+    /**
+     * Bascule l'affichage des cartes entre face visible et face cachée.
+     */
     private void toggleCardsVisibility() {
         areCardsVisible = !areCardsVisible;
         revealButton.setText(areCardsVisible ? "Cacher mes cartes" : "Voir mes cartes");
@@ -146,6 +159,9 @@ public class ExchangePage {
         }
     }
 
+    /**
+     * Gère la sélection visuelle d'une carte (effet de surbrillance).
+     */
     private void selectCard(Card card, ImageView cardView, FlowPane parent) {
         // Reset styles pour toutes les cartes
         parent.getChildren().forEach(node -> {
@@ -154,15 +170,15 @@ public class ExchangePage {
             node.setScaleY(1.0);
         });
 
-        // Appliquer le style de sélection
+        // Appliquer le style de sélection (halo doré)
         DropShadow borderGlow = new DropShadow();
         borderGlow.setColor(Color.GOLD);
         borderGlow.setWidth(40);
         borderGlow.setHeight(40);
-        borderGlow.setSpread(0.6); // Rend l'ombre plus dense, comme une bordure
+        borderGlow.setSpread(0.6);
         
         cardView.setEffect(borderGlow);
-        cardView.setScaleX(1.2); // Agrandir
+        cardView.setScaleX(1.2); // Agrandir légèrement
         cardView.setScaleY(1.2);
         
         selectedCard = card;

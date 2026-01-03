@@ -7,6 +7,11 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 
+/**
+ * Page de sélection du mode de jeu (Menu Principal).
+ * Permet de choisir le mode (Normal/Piquant), le type de jeu (Individuel/Équipe)
+ * et le nombre de joueurs.
+ */
 public class ModeSelectionPage {
 
     private BorderPane root;
@@ -20,7 +25,9 @@ public class ModeSelectionPage {
         showScreen();
     }
 
-    //Affiche la page javaFX
+    /**
+     * Initialise l'interface graphique de la page.
+     */
     private void showScreen(){
         root = new BorderPane();
         root.setPadding(new Insets(10));
@@ -29,6 +36,9 @@ public class ModeSelectionPage {
         root.setBottom(nextArea());
     }
 
+    /**
+     * Crée la zone centrale contenant les sélecteurs (ComboBox).
+     */
     private VBox createSelectionArea() {
         VBox vBox = new VBox(40);
         vBox.setPadding(new Insets(50, 20, 20, 20));
@@ -37,25 +47,17 @@ public class ModeSelectionPage {
         Label titleLabel = new Label("Trio");
         titleLabel.setAlignment(Pos.CENTER);
         titleLabel.setStyle("-fx-font-size: 75px;" +
-//                "-fx-padding: 100px;" +
-//                "-fx-border-insets: 50px;" +
-//                "fx-background-insets: 50px;" +
                 "-fx-underline: true;"
         );
 
-        // Container pour le mode de jeu
+        // Container pour le mode de jeu (Normal / Piquant)
         HBox modeContainer = createBoxes();
-
-        //Label du mode de jeu
         Label modeLabel = new Label("Mode de jeu: ");
         modeLabel.setAlignment(Pos.CENTER);
         modeLabel.setStyle("-fx-font-size: 16px;");
 
-        // Création de la ComboBox
         modeComboBox = new ComboBox<>();
-        // Ajout des options
         modeComboBox.getItems().addAll("Normal", "Piquant");
-        // Valeur par défaut
         modeComboBox.setValue("Normal");
 
         modeContainer.getChildren().addAll(modeLabel, modeComboBox);
@@ -66,7 +68,6 @@ public class ModeSelectionPage {
         teamLabel.setAlignment(Pos.CENTER);
         teamLabel.setStyle("-fx-font-size: 16px;");
 
-        // Création de la ComboBox
         teamComboBox = new ComboBox<>();
         teamComboBox.getItems().addAll("Individuel", "Equipe");
         teamComboBox.setValue("Individuel");
@@ -88,6 +89,9 @@ public class ModeSelectionPage {
         return vBox;
     }
 
+    /**
+     * Crée un conteneur stylisé pour les options de sélection.
+     */
     private HBox createBoxes(){
         HBox hBox = new HBox(15);
         hBox.setAlignment(Pos.CENTER);
@@ -99,7 +103,7 @@ public class ModeSelectionPage {
                         "-fx-background-radius: 10 10 0 0;" +
                         "-fx-border-color: #0D1117;" +
                         "-fx-border-width: 2;" +
-                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);" // Ombre
+                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, -3);"
         );
 
         return hBox;
@@ -132,14 +136,9 @@ public class ModeSelectionPage {
     }
 
     public Button getRulesButton() {return rulesButton;}
-
     public Button getNextButton() {return nextButton;}
-
     public ComboBox<String> getModeComboBox() {return modeComboBox;}
-
     public ComboBox<String> getTeamComboBox() {return teamComboBox;}
-
     public ComboBox<String> getPlayerComboBox() {return playerComboBox;}
-
     public BorderPane getRoot() {return root;}
 }

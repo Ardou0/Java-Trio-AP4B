@@ -6,23 +6,27 @@ import java.util.Objects;
  * Représente une carte qui a été révélée, en conservant une trace de son emplacement d'origine.
  * Cela permet de savoir d'où vient une carte (main d'un joueur, pioche/centre)
  * afin de pouvoir la retirer correctement si un trio est formé.
+ * Cette classe utilise le pattern Factory pour sa création.
  */
 public class CardLocation {
 
     private final Card card;
-    private final Actor owner; // Le joueur propriétaire, peut être null
-    private final DrawPile drawPile; // La pioche, peut être null
+    private final Actor owner; // Le joueur propriétaire, peut être null si la carte vient du centre
+    private final DrawPile drawPile; // La pioche, peut être null si la carte vient d'un joueur
 
-    // Constructeur privé pour forcer l'utilisation des méthodes factory
+    // Constructeur privé pour forcer l'utilisation des méthodes factory statiques
     private CardLocation(Card card, Actor owner, DrawPile drawPile) {
         this.card = card;
-        this.card.toggleIterable();
+        this.card.toggleIterable(); // Marque la carte comme "en cours d'utilisation"
         this.owner = owner;
         this.drawPile = drawPile;
     }
 
     /**
      * Crée une localisation pour une carte provenant de la main d'un joueur.
+     * @param card La carte révélée.
+     * @param player Le joueur qui possède la carte.
+     * @return Une nouvelle instance de CardLocation.
      */
     public static CardLocation fromPlayer(Card card, Actor player) {
         Objects.requireNonNull(card, "La carte ne peut pas être nulle");
@@ -32,6 +36,9 @@ public class CardLocation {
 
     /**
      * Crée une localisation pour une carte provenant de la pioche (le "centre").
+     * @param card La carte révélée.
+     * @param drawPile La pioche d'où vient la carte.
+     * @return Une nouvelle instance de CardLocation.
      */
     public static CardLocation fromDrawPile(Card card, DrawPile drawPile) {
         Objects.requireNonNull(card, "La carte ne peut pas être nulle");
@@ -40,8 +47,9 @@ public class CardLocation {
     }
 
     /**
-     * Retire la carte de son emplacement d'origine.
-     * Appelle la méthode de suppression appropriée sur le propriétaire (joueur ou pioche).
+     * Retire définitivement la carte de son emplacement d'origine.
+     * Cette méthode est appelée lorsqu'un trio est validé.
+     * Elle délègue la suppression à l'objet source (ActorHand ou DrawPile).
      */
     public void removeFromSource() {
         if (owner != null) {
